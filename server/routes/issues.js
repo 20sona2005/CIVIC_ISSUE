@@ -14,11 +14,15 @@ if (!fs.existsSync(uploadsDir)) {
 // POST /api/issues — Report a new issue
 router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { title, description, category, location, reportedBy } = req.body;
+    const { title, description, category, location, reportedBy, lat, lng } = req.body;
 
     if (!title || !description || !category || !location || !reportedBy) {
       return res.status(400).json({ message: 'All fields are required' });
     }
+
+    // Parse coordinates if provided (sent as strings via FormData)
+    const parsedLat = lat ? parseFloat(lat) : null;
+    const parsedLng = lng ? parseFloat(lng) : null;
 
     const issue = await Issue.create({
       title,
@@ -27,6 +31,11 @@ router.post('/', upload.single('image'), async (req, res) => {
       location,
       reportedBy,
       image: req.file ? req.file.filename : null,
+      status: 'Reported',
+      coords: {
+        lat: parsedLat && !isNaN(parsedLat) ? parsedLat : null,
+        lng: parsedLng && !isNaN(parsedLng) ? parsedLng : null,
+      },
     });
 
     res.status(201).json(issue);
@@ -48,6 +57,10 @@ router.get('/', async (req, res) => {
 // GET /api/issues/:id — Get single issue by ID
 router.get('/:id', async (req, res) => {
   try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid issue ID' });
+    }
+
     const issue = await Issue.findById(req.params.id);
     if (!issue) {
       return res.status(404).json({ message: 'Issue not found' });

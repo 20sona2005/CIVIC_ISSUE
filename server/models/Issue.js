@@ -22,6 +22,10 @@ const issueSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    coords: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
     image: {
       type: String,   // stores filename of uploaded image
       default: null,

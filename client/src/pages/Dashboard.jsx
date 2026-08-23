@@ -196,21 +196,31 @@ export default function Dashboard() {
           border-radius: var(--radius);
           padding: var(--sp-5) var(--sp-6);
           box-shadow: var(--shadow-sm);
+          border-left: 4px solid transparent;
+          transition: box-shadow var(--transition), transform var(--transition);
+        }
+        .stat-card:hover {
+          box-shadow: var(--shadow);
+          transform: translateY(-2px);
         }
         .stat-card-value {
           font-size: 32px;
           font-weight: 700;
           line-height: 1;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
         .stat-card-label {
           font-size: 13px;
           color: var(--text-secondary);
           font-weight: 500;
         }
+        .stat-blue   { border-left-color: var(--primary); }
         .stat-blue   .stat-card-value { color: var(--primary); }
+        .stat-yellow { border-left-color: var(--warning); }
         .stat-yellow .stat-card-value { color: var(--warning); }
+        .stat-blue2  { border-left-color: #0891b2; }
         .stat-blue2  .stat-card-value { color: #0891b2; }
+        .stat-green  { border-left-color: var(--success); }
         .stat-green  .stat-card-value { color: var(--success); }
 
         /* Quick actions */
@@ -237,18 +247,18 @@ export default function Dashboard() {
           border-radius: var(--radius);
           box-shadow: var(--shadow-sm);
           text-decoration: none;
-          transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+          transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
           text-align: center;
         }
         .cat-card:hover {
-          box-shadow: var(--shadow);
+          box-shadow: var(--shadow-md);
           border-color: var(--primary);
-          transform: translateY(-2px);
+          transform: translateY(-3px);
           text-decoration: none;
         }
-        .cat-icon  {
-          width: 40px;
-          height: 40px;
+        .cat-icon {
+          width: 42px;
+          height: 42px;
           border-radius: var(--radius-sm);
           background: var(--primary-light);
           color: var(--primary);
@@ -256,16 +266,16 @@ export default function Dashboard() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          transition: background 0.15s;
+          transition: background var(--transition-fast), color var(--transition-fast);
         }
         .cat-card:hover .cat-icon {
           background: var(--primary);
           color: #fff;
         }
-        .cat-name  { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-        .cat-count { font-size: 12px; color: var(--text-muted); }
+        .cat-name  { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+        .cat-count { font-size: 11px; color: var(--text-muted); }
 
-        /* Section header with link */
+        /* Section header */
         .section-head {
           display: flex;
           align-items: center;
@@ -279,9 +289,10 @@ export default function Dashboard() {
           .cat-grid   { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 600px) {
-          .dash-stats  { grid-template-columns: repeat(2, 1fr); }
-          .cat-grid    { grid-template-columns: repeat(2, 1fr); }
+          .dash-stats   { grid-template-columns: repeat(2, 1fr); }
+          .cat-grid     { grid-template-columns: repeat(2, 1fr); }
           .dash-actions { flex-direction: column; }
+          .stat-card-value { font-size: 26px; }
         }
       `}</style>
     </div>

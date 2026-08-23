@@ -130,6 +130,22 @@ export default function IssueDetail() {
                 </svg>
                 <span>{issue.location}</span>
               </div>
+              {/* Coordinates row — only shown when coords were captured */}
+              {issue.coords?.lat != null && issue.coords?.lng != null && (
+                <div className="detail-coords">
+                  <span className="coords-text">
+                    {issue.coords.lat.toFixed(5)}, {issue.coords.lng.toFixed(5)}
+                  </span>
+                  <a
+                    href={`https://www.google.com/maps?q=${issue.coords.lat},${issue.coords.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm"
+                  >
+                    View Location
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -236,7 +252,8 @@ export default function IssueDetail() {
           overflow: hidden;
           margin-bottom: var(--sp-4);
           border: 1px solid var(--border);
-          max-height: 400px;
+          aspect-ratio: 16 / 9;
+          background: var(--bg);
         }
         .detail-image {
           width: 100%;
@@ -278,6 +295,25 @@ export default function IssueDetail() {
           gap: var(--sp-2);
           font-size: 14px;
           color: var(--text-secondary);
+          margin-bottom: var(--sp-3);
+        }
+        .detail-coords {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-3);
+          flex-wrap: wrap;
+          padding-top: var(--sp-3);
+          border-top: 1px solid var(--border);
+          margin-top: var(--sp-1);
+        }
+        .coords-text {
+          font-size: 12px;
+          font-family: monospace;
+          color: var(--text-muted);
+          background: var(--bg);
+          padding: 2px 6px;
+          border-radius: var(--radius-xs);
+          border: 1px solid var(--border);
         }
 
         /* Status tracker */

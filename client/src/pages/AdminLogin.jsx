@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-/* Eye icon components */
 function EyeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -24,15 +23,17 @@ function EyeOffIcon() {
   );
 }
 
-export default function LoginRegister() {
-  const [mode, setMode]       = useState('login');
-  const [form, setForm]       = useState({ name: '', email: '', password: '' });
+export default function AdminLogin() {
+  const [form, setForm]       = useState({ email: '', password: '' });
   const [showPw, setShowPw]   = useState(false);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
-  const navigate  = useNavigate();
+  const { login, isAdmin, user } = useAuth();
+  const navigate = useNavigate();
+
+  if (user && isAdmin)  return <Navigate to="/admin" replace />;
+  if (user && !isAdmin) return <Navigate to="/"      replace />;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -44,60 +45,53 @@ export default function LoginRegister() {
     setError('');
     setLoading(true);
     try {
-      const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const payload  = mode === 'login'
-        ? { email: form.email, password: form.password }
-        : { name: form.name, email: form.email, password: form.password };
-
-      const { data } = await api.post(endpoint, payload);
+      const { data } = await api.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
+      if (data.user.role !== 'admin') {
+        setError('Access denied. This portal is for admins only.');
+        setLoading(false);
+        return;
+      }
       login(data.user, data.token);
-      navigate('/');
+      navigate('/admin');
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
-  const switchMode = () => {
-    setMode(m => m === 'login' ? 'register' : 'login');
-    setForm({ name: '', email: '', password: '' });
-    setShowPw(false);
-    setError('');
-  };
-
   return (
     <div className="auth-page">
-      {/* ── Left branding panel ── */}
-      <div className="auth-left">
+      {/* ── Left dark branding panel ── */}
+      <div className="auth-left admin-left">
         <div className="auth-left-content">
           <div className="auth-brand-logo">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
             CivicPulse
           </div>
-          <h1 className="auth-headline">
-            Report civic issues.<br />Track resolutions.
-          </h1>
+          <h1 className="auth-headline">Admin Portal</h1>
           <p className="auth-sub">
-            A platform for citizens to report, track, and resolve civic issues in their communities.
+            Manage reported civic issues, update statuses, and oversee community activity from one place.
           </p>
           <div className="auth-features">
             {[
               {
-                icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-                text: 'Report issues in under 2 minutes',
-              },
-              {
-                icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-                text: 'Pin exact locations for faster resolution',
+                icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>,
+                text: 'View and manage all reported issues',
               },
               {
                 icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-                text: 'Track status from reported to resolved',
+                text: 'Update issue statuses in real time',
+              },
+              {
+                icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                text: 'Monitor community engagement',
               },
             ].map(({ icon, text }) => (
               <div key={text} className="auth-feature">
@@ -112,55 +106,35 @@ export default function LoginRegister() {
       {/* ── Right form panel ── */}
       <div className="auth-right">
         <div className="auth-form-box">
-          {/* Tabs */}
-          <div className="auth-tabs">
-            <button
-              className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-              onClick={() => mode !== 'login' && switchMode()}
-              type="button"
-            >
-              Sign In
-            </button>
-            <button
-              className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
-              onClick={() => mode !== 'register' && switchMode()}
-              type="button"
-            >
-              Create Account
-            </button>
+          <div className="admin-login-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Admin Access Only
           </div>
 
           <div className="auth-form-header">
-            <h2>{mode === 'login' ? 'Welcome back' : 'Get started today'}</h2>
-            <p>{mode === 'login' ? 'Sign in to your CivicPulse account' : 'Create your free citizen account'}</p>
+            <h2>Admin Sign In</h2>
+            <p>Sign in to manage civic issues</p>
           </div>
 
-          {error && <div className="alert alert-error" style={{ marginBottom: 'var(--sp-4)' }}>{error}</div>}
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: 'var(--sp-4)' }}>
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {mode === 'register' && (
-              <div className="form-group">
-                <label className="form-label" htmlFor="name">Full Name</label>
-                <input
-                  id="name" name="name" type="text"
-                  className="form-input"
-                  placeholder="e.g. Priya Sharma"
-                  value={form.name}
-                  onChange={handleChange}
-                  required autoComplete="name"
-                />
-              </div>
-            )}
-
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email Address</label>
               <input
                 id="email" name="email" type="email"
                 className="form-input"
-                placeholder="you@example.com"
+                placeholder="admin@civicpulse.com"
                 value={form.email}
                 onChange={handleChange}
-                required autoComplete="email"
+                required autoComplete="email" autoFocus
               />
             </div>
 
@@ -171,11 +145,10 @@ export default function LoginRegister() {
                   id="password" name="password"
                   type={showPw ? 'text' : 'password'}
                   className="form-input"
-                  placeholder={mode === 'register' ? 'Minimum 6 characters' : '••••••••'}
+                  placeholder="••••••••"
                   value={form.password}
                   onChange={handleChange}
-                  required minLength={6}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  required autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -195,21 +168,15 @@ export default function LoginRegister() {
               style={{ marginTop: 'var(--sp-2)' }}
             >
               {loading ? (
-                <><span className="spinner spinner-sm" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} /> Please wait…</>
-              ) : mode === 'login' ? 'Sign In' : 'Create Account'}
+                <><span className="spinner spinner-sm" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} /> Signing in…</>
+              ) : 'Sign In as Admin'}
             </button>
           </form>
 
-          <div className="auth-footer-links">
+          <div className="auth-footer-links" style={{ marginTop: 'var(--sp-5)' }}>
             <p className="auth-switch">
-              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-              <button className="auth-switch-btn" onClick={switchMode} type="button">
-                {mode === 'login' ? 'Create one' : 'Sign in'}
-              </button>
-            </p>
-            <p className="auth-switch">
-              Are you an admin?{' '}
-              <a href="/admin/login" className="auth-switch-btn">Admin login →</a>
+              Not an admin?{' '}
+              <a href="/login" className="auth-switch-btn">Go to citizen login →</a>
             </p>
           </div>
         </div>
@@ -220,8 +187,6 @@ export default function LoginRegister() {
           display: flex;
           min-height: 100vh;
         }
-
-        /* Left */
         .auth-left {
           flex: 1;
           background: linear-gradient(150deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
@@ -238,6 +203,9 @@ export default function LoginRegister() {
           inset: 0;
           background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.07) 0%, transparent 60%);
           pointer-events: none;
+        }
+        .admin-left {
+          background: linear-gradient(150deg, #0f172a 0%, #1e293b 55%, #334155 100%);
         }
         .auth-left-content {
           max-width: 400px;
@@ -269,11 +237,7 @@ export default function LoginRegister() {
           line-height: 1.65;
           margin-bottom: var(--sp-8);
         }
-        .auth-features {
-          display: flex;
-          flex-direction: column;
-          gap: var(--sp-4);
-        }
+        .auth-features { display: flex; flex-direction: column; gap: var(--sp-4); }
         .auth-feature {
           display: flex;
           align-items: center;
@@ -283,13 +247,10 @@ export default function LoginRegister() {
           font-weight: 500;
         }
         .auth-feature-icon {
-          width: 30px;
-          height: 30px;
+          width: 30px; height: 30px;
           border-radius: var(--radius-sm);
           background: rgba(255,255,255,0.18);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
 
@@ -299,7 +260,7 @@ export default function LoginRegister() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: var(--sp-10) var(--sp-10);
+          padding: var(--sp-10);
           background: var(--surface);
         }
         .auth-form-box {
@@ -312,55 +273,30 @@ export default function LoginRegister() {
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Tabs */
-        .auth-tabs {
-          display: flex;
-          background: var(--bg);
-          border-radius: var(--radius-sm);
-          padding: 4px;
-          margin-bottom: var(--sp-6);
-          border: 1px solid var(--border);
-        }
-        .auth-tab {
-          flex: 1;
-          padding: 8px;
-          font-family: var(--font);
-          font-size: 13px;
-          font-weight: 500;
-          border: none;
-          border-radius: 4px;
-          background: transparent;
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
-        }
-        .auth-tab.active {
-          background: var(--surface);
-          color: var(--text-primary);
-          box-shadow: var(--shadow-sm);
-          font-weight: 600;
+        /* Admin badge */
+        .admin-login-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: #fef3c7;
+          color: #92400e;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          padding: 5px 12px;
+          border-radius: 999px;
+          margin-bottom: var(--sp-5);
+          border: 1px solid #fde68a;
         }
 
         /* Form header */
-        .auth-form-header {
-          margin-bottom: var(--sp-6);
-        }
-        .auth-form-header h2 {
-          margin-bottom: 4px;
-          color: var(--text-primary);
-        }
-        .auth-form-header p {
-          font-size: 14px;
-          color: var(--text-secondary);
-        }
+        .auth-form-header { margin-bottom: var(--sp-6); }
+        .auth-form-header h2 { margin-bottom: 4px; color: var(--text-primary); }
+        .auth-form-header p  { font-size: 14px; color: var(--text-secondary); }
 
         /* Footer links */
-        .auth-footer-links {
-          margin-top: var(--sp-5);
-          display: flex;
-          flex-direction: column;
-          gap: var(--sp-2);
-        }
+        .auth-footer-links { display: flex; flex-direction: column; gap: var(--sp-2); }
         .auth-switch {
           text-align: center;
           font-size: 13px;
@@ -368,13 +304,10 @@ export default function LoginRegister() {
           margin: 0;
         }
         .auth-switch-btn {
-          background: none;
-          border: none;
+          background: none; border: none;
           color: var(--primary);
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          padding: 0;
+          font-size: 13px; font-weight: 500;
+          cursor: pointer; padding: 0;
           font-family: var(--font);
           text-decoration: none;
           transition: color var(--transition-fast);
@@ -384,13 +317,12 @@ export default function LoginRegister() {
           text-decoration: underline;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-          .auth-page    { flex-direction: column; }
-          .auth-left    { padding: var(--sp-10) var(--sp-6); min-height: 260px; }
-          .auth-headline{ font-size: 26px; }
-          .auth-right   { width: 100%; padding: var(--sp-8) var(--sp-5); }
-          .auth-form-box{ max-width: 100%; }
+          .auth-page   { flex-direction: column; }
+          .auth-left   { padding: var(--sp-10) var(--sp-6); min-height: 220px; }
+          .auth-headline { font-size: 26px; }
+          .auth-right  { width: 100%; padding: var(--sp-8) var(--sp-5); }
+          .auth-form-box { max-width: 100%; }
         }
       `}</style>
     </div>
