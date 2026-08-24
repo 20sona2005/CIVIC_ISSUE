@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import api, { UPLOADS_URL } from '../api/axios';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -91,7 +91,7 @@ export default function IssueDetail() {
           {issue.image && (
             <div className="detail-image-wrap">
               <img
-                src={`/uploads/${issue.image}`}
+                src={`${UPLOADS_URL}/${issue.image}`}
                 alt={issue.title}
                 className="detail-image"
               />

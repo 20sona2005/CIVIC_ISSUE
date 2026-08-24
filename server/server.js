@@ -33,10 +33,19 @@ app.get('/', (req, res) => {
 // Connect to MongoDB and start server
 const PORT = process.env.PORT || 5000;
 
-const mongoUrl = new URL(process.env.MONGO_URI);
+if (!process.env.MONGO_URI) {
+  console.error('ERROR: MONGO_URI is not defined. Please create a .env file in the server/ directory.');
+  process.exit(1);
+}
 
-console.log('MongoDB host:', mongoUrl.hostname);
-console.log('MongoDB database:', mongoUrl.pathname);
+try {
+  const mongoUrl = new URL(process.env.MONGO_URI);
+  console.log('MongoDB host:', mongoUrl.hostname);
+  console.log('MongoDB database:', mongoUrl.pathname);
+} catch {
+  console.error('ERROR: MONGO_URI is not a valid URL. Check your .env file.');
+  process.exit(1);
+}
 
 mongoose
   .connect(process.env.MONGO_URI, {
