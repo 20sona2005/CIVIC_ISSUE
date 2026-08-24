@@ -106,9 +106,7 @@ export default function ReportIssue() {
       if (coords.lng !== null) formData.append('lng', coords.lng);
       if (image) formData.append('image', image);
 
-      await api.post('/issues', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post('/issues', formData);
 
       setSuccess(true);
       setTimeout(() => navigate('/explore'), 1800);

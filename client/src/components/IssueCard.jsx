@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { UPLOADS_URL } from '../api/axios';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -52,7 +53,7 @@ export default function IssueCard({ issue }) {
       <div className="issue-card-img-wrap">
         {issue.image ? (
           <img
-            src={`/uploads/${issue.image}`}
+            src={`${UPLOADS_URL}/${issue.image}`}
             alt={issue.title}
             className="issue-card-img"
             loading="lazy"

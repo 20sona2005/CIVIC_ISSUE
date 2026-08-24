@@ -2,14 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Issue = require('../models/Issue');
 const upload = require('../middleware/upload');
-const fs = require('fs');
 const path = require('path');
-
-// Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
 
 // POST /api/issues — Report a new issue
 router.post('/', upload.single('image'), async (req, res) => {

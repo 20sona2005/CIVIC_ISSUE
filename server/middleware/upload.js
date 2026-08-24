@@ -1,10 +1,19 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// Absolute path to uploads directory — works regardless of where node is launched from
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+// Create the folder if it doesn't exist
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Store uploaded files in server/uploads/
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
