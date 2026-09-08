@@ -16,9 +16,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Base URL for static assets (uploaded images etc.)
+// Base URL for static assets (uploaded images).
+// Use a relative path so it goes through the Vite proxy (/uploads → localhost:5000/uploads).
+// This means images work as long as the dev server is running — no hardcoded port needed.
 export const UPLOADS_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/uploads`
-  : 'http://localhost:5000/uploads';
+  : '/uploads';
 
 export default api;

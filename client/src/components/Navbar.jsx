@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -61,6 +62,9 @@ export default function Navbar() {
 
           {/* User name */}
           <span className="nav-user">{user.name}</span>
+
+          {/* Notification bell */}
+          <NotificationBell />
 
           {/* Logout */}
           <button className="btn btn-outline btn-sm" onClick={handleLogout}>
@@ -123,6 +127,14 @@ export default function Navbar() {
                 {label}
               </NavLink>
             ))}
+            {/* Notifications link in mobile */}
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) => 'nav-mobile-link' + (isActive ? ' active' : '')}
+              onClick={() => setMenuOpen(false)}
+            >
+              🔔 Notifications
+            </NavLink>
           </div>
 
           <button

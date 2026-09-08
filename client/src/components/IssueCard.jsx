@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { UPLOADS_URL } from '../api/axios';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -39,6 +42,27 @@ function ImagePlaceholder({ category }) {
 
 export default function IssueCard({ issue }) {
   const navigate = useNavigate();
+  const { user }  = useAuth();
+
+  const [supportCount, setSupportCount]   = useState(issue.supportCount || 0);
+  const [supported, setSupported]         = useState(false);
+  const [supporting, setSupporting]       = useState(false);
+
+  const handleSupport = async (e) => {
+    e.stopPropagation(); // don't navigate to detail
+    if (!user || supporting || supported) return;
+    setSupporting(true);
+    try {
+      const { data } = await api.post(`/issues/${issue._id}/support`, { userId: user.name });
+      setSupportCount(data.supportCount);
+      setSupported(true);
+    } catch (err) {
+      const msg = err.response?.data?.message || '';
+      if (msg.toLowerCase().includes('already')) setSupported(true);
+    } finally {
+      setSupporting(false);
+    }
+  };
 
   return (
     <article
@@ -65,12 +89,34 @@ export default function IssueCard({ issue }) {
         <span className={`badge issue-card-status-badge ${statusClass[issue.status] || 'badge-reported'}`}>
           {issue.status}
         </span>
+        {/* Duplicate badge */}
+        {issue.isDuplicate && (
+          <span style={{
+            position: 'absolute', top: 10, left: 10,
+            background: 'rgba(234,179,8,0.92)', color: '#713f12',
+            fontSize: 10, fontWeight: 700, padding: '2px 8px',
+            borderRadius: 20, letterSpacing: '0.03em',
+          }}>
+            POSSIBLE DUPLICATE
+          </span>
+        )}
       </div>
 
       <div className="card-body issue-card-body">
         {/* Category tag */}
         <div className="issue-card-top">
           <span className="tag">{issue.category}</span>
+          {/* Support count chip */}
+          {supportCount > 0 && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 600, color: '#2563eb',
+              background: '#eff6ff', border: '1px solid #bfdbfe',
+              borderRadius: 20, padding: '1px 8px',
+            }}>
+              👥 {supportCount}
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -90,7 +136,28 @@ export default function IssueCard({ issue }) {
             </svg>
             <span className="truncate">{issue.location}</span>
           </span>
-          <span className="issue-card-time">{timeAgo(issue.createdAt)}</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <span className="issue-card-time">{timeAgo(issue.createdAt)}</span>
+            {/* Support button — only for logged-in users, not for the reporter */}
+            {user && issue.reportedBy !== user.name && issue.status !== 'Resolved' && (
+              <button
+                onClick={handleSupport}
+                disabled={supporting || supported}
+                title={supported ? 'You supported this' : 'Support this issue'}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                  padding: '2px 8px', borderRadius: 20, border: 'none',
+                  background: supported ? '#d1fae5' : '#eff6ff',
+                  color:      supported ? '#065f46' : '#2563eb',
+                  fontSize: 11, fontWeight: 700, cursor: supporting || supported ? 'default' : 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {supported ? '✓' : '👍'} {supporting ? '…' : supported ? 'Supported' : 'Support'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

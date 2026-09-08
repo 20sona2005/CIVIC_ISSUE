@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { UPLOADS_URL } from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -28,16 +29,23 @@ function formatDate(dateStr) {
 export default function IssueDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user }  = useAuth();
 
-  const [issue, setIssue]   = useState(null);
+  const [issue, setIssue]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError]     = useState('');
+
+  // Support state
+  const [supportCount, setSupportCount] = useState(0);
+  const [supported, setSupported]       = useState(false);
+  const [supporting, setSupporting]     = useState(false);
 
   useEffect(() => {
     const fetchIssue = async () => {
       try {
         const { data } = await api.get(`/issues/${id}`);
         setIssue(data);
+        setSupportCount(data.supportCount || 0);
       } catch (err) {
         setError(
           err.response?.status === 404
@@ -50,6 +58,21 @@ export default function IssueDetail() {
     };
     fetchIssue();
   }, [id]);
+
+  const handleSupport = async () => {
+    if (!user || supporting || supported) return;
+    setSupporting(true);
+    try {
+      const { data } = await api.post(`/issues/${id}/support`, { userId: user.name });
+      setSupportCount(data.supportCount);
+      setSupported(true);
+    } catch (err) {
+      const msg = err.response?.data?.message || '';
+      if (msg.toLowerCase().includes('already')) setSupported(true);
+    } finally {
+      setSupporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,6 +109,40 @@ export default function IssueDetail() {
       <div className="detail-layout">
         {/* ── Main Content ──────────────────────────────── */}
         <div className="detail-main">
+
+          {/* Duplicate origin notice */}
+          {issue.isDuplicate && issue.duplicateOf && (
+            <div style={{
+              background: '#fffbeb', border: '1px solid #fcd34d',
+              borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <span style={{ fontSize: 20 }}>⚠️</span>
+              <div>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13, color: '#92400e' }}>
+                  This issue was submitted as potentially similar to an existing report.
+                </p>
+                <p style={{ margin: 0, fontSize: 12, color: '#78350f' }}>
+                  Confidence: <strong>{Math.round((issue.duplicateConfidence || 0) * 100)}%</strong> match
+                  {issue.duplicateOf?.title && (
+                    <> — related to &quot;<em>{issue.duplicateOf.title}</em>&quot;</>
+                  )}
+                </p>
+                {issue.duplicateOf?._id && (
+                  <button
+                    onClick={() => navigate(`/issues/${issue.duplicateOf._id}`)}
+                    style={{
+                      marginTop: 6, padding: '3px 10px', borderRadius: 6,
+                      border: '1px solid #d97706', background: '#fff',
+                      color: '#92400e', fontSize: 12, cursor: 'pointer', fontWeight: 500,
+                    }}
+                  >
+                    View Original Issue →
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Image */}
           {issue.image && (
@@ -174,6 +231,58 @@ export default function IssueDetail() {
                   active={issue.status === 'Resolved'}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Community Support card */}
+          <div className="card" style={{ marginBottom: 'var(--sp-4)' }}>
+            <div className="card-body">
+              <h3 style={{ marginBottom: 'var(--sp-3)' }}>Community Support</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 28 }}>👥</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 22, color: 'var(--text-primary)' }}>
+                    {supportCount}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    citizen{supportCount !== 1 ? 's' : ''} supporting this issue
+                  </div>
+                </div>
+              </div>
+              {user && issue.reportedBy !== user.name && issue.status !== 'Resolved' ? (
+                <button
+                  onClick={handleSupport}
+                  disabled={supporting || supported}
+                  className={`btn btn-full ${supported ? '' : 'btn-primary'}`}
+                  style={supported ? {
+                    background: '#d1fae5', color: '#065f46',
+                    border: '1px solid #86efac', cursor: 'default',
+                  } : {}}
+                >
+                  {supported
+                    ? '✓ You supported this issue'
+                    : supporting
+                    ? 'Supporting…'
+                    : '👍 Support This Issue'}
+                </button>
+              ) : issue.status === 'Resolved' ? (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                  This issue has been resolved.
+                </p>
+              ) : !user ? (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                  <button
+                    className="btn btn-outline btn-sm btn-full"
+                    onClick={() => navigate('/login')}
+                  >
+                    Sign in to support
+                  </button>
+                </p>
+              ) : (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                  You reported this issue.
+                </p>
+              )}
             </div>
           </div>
 
