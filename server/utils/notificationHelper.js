@@ -197,4 +197,59 @@ async function notifyIssueReporter(io, issue, oldStatus, newStatus, adminName) {
   }
 }
 
-module.exports = { notifyAdmins, notifyIssueReporter };
+// ── PUBLIC: notify all admins that a citizen escalated an issue ───────────────
+/**
+ * Called when citizen says their "Resolved" issue was NOT actually fixed.
+ * The issue is already reopened + isEscalated = true before this is called.
+ *
+ * @param {object} io          — Socket.IO server instance
+ * @param {object} issue       — Mongoose Issue document (after escalation save)
+ * @param {string} citizenName — display name of the citizen who triggered it
+ */
+async function notifyEscalation(io, issue, citizenName) {
+  try {
+    const admins = await getAllAdmins();
+    if (!admins.length) return;
+
+    const date = new Date().toLocaleString('en-IN', {
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+
+    const title   = '🚨 Issue Escalated — Requires Supervisor Review';
+    const message =
+      `A citizen has reported that their issue was not actually resolved.\n\n` +
+      `Issue: ${issue.title}\n` +
+      `Category: ${issue.category}\n` +
+      `Location: ${issue.location}\n` +
+      `Reported By: ${citizenName}\n` +
+      `Escalated On: ${date}\n\n` +
+      `The issue has been automatically reopened. Please review and reassign to a supervisor.`;
+
+    const baseData = {
+      recipientRole: 'admin',
+      type:          'STATUS_UPDATE',
+      title,
+      message,
+      issueId:       issue._id,
+      issueTitle:    issue.title,
+      issueCategory: issue.category,
+      issueLocation: issue.location,
+      triggeredBy:   citizenName,
+    };
+
+    const promises = admins.map(admin =>
+      saveAndEmit(io, {
+        ...baseData,
+        recipientId:   admin._id,
+        recipientName: admin.name,
+      })
+    );
+
+    await Promise.all(promises);
+  } catch (err) {
+    console.error('[notifyEscalation] error:', err.message);
+  }
+}
+
+module.exports = { notifyAdmins, notifyIssueReporter, notifyEscalation };

@@ -82,6 +82,68 @@ const issueSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // ── Citizen Feedback Fields ───────────────────────────────────────────────
+    // Collected after status reaches "Resolved" via the feedback endpoint.
+
+    // Did the citizen confirm the issue was actually resolved?
+    // null  = feedback not yet submitted
+    // true  = citizen confirmed resolution
+    // false = citizen said NOT resolved → triggers escalation workflow
+    wasResolved: {
+      type: Boolean,
+      default: null,
+    },
+
+    // Star rating 1–5 (only set when wasResolved === true)
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null,
+    },
+
+    // Free-text improvement comment
+    feedbackComment: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    // Timestamp when feedback was first submitted
+    feedbackAt: {
+      type: Date,
+      default: null,
+    },
+
+    // ── Escalation Fields ─────────────────────────────────────────────────────
+    // Set automatically when citizen reports the issue is NOT resolved.
+
+    // Whether this issue has been escalated to a supervisor
+    isEscalated: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Timestamp when escalation was triggered
+    escalatedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // Why it was escalated ("Citizen reported issue not resolved")
+    escalationReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    // Internal note added by supervisor / admin after reviewing escalation
+    supervisorNote: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -11,14 +11,21 @@ const statusClass = {
 };
 
 export default function AdminDashboard() {
-  const [stats, setStats]       = useState(null);
-  const [issues, setIssues]     = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-  const [updating, setUpdating] = useState(null);
+  const [stats, setStats]               = useState(null);
+  const [issues, setIssues]             = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [updating, setUpdating]         = useState(null);
+
+  // Feedback metrics state
+  const [feedbackStats, setFeedbackStats]   = useState(null);
+  const [escalated, setEscalated]           = useState([]);
+  const [noteTarget, setNoteTarget]         = useState(null);   // issue._id being noted
+  const [noteText, setNoteText]             = useState('');
+  const [noteSaving, setNoteSaving]         = useState(false);
 
   // Filter state
-  const [search, setSearch]         = useState('');
+  const [search, setSearch]                 = useState('');
   const [statusFilter, setStatusFilter]     = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
@@ -27,12 +34,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, issuesRes] = await Promise.all([
+        const [statsRes, issuesRes, feedbackRes, escalatedRes] = await Promise.all([
           api.get('/admin/stats'),
           api.get('/admin/issues'),
+          api.get('/feedback/stats'),
+          api.get('/feedback/escalated?limit=10'),
         ]);
         setStats(statsRes.data);
         setIssues(issuesRes.data);
+        setFeedbackStats(feedbackRes.data);
+        setEscalated(escalatedRes.data.issues || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load admin data.');
       } finally {
@@ -93,6 +104,23 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleSaveNote(issueId) {
+    if (!noteText.trim()) return;
+    setNoteSaving(true);
+    try {
+      await api.patch(`/feedback/${issueId}/supervisor-note`, { note: noteText.trim() });
+      setEscalated(prev =>
+        prev.map(i => i._id === issueId ? { ...i, supervisorNote: noteText.trim() } : i)
+      );
+      setNoteTarget(null);
+      setNoteText('');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to save note.');
+    } finally {
+      setNoteSaving(false);
+    }
+  }
+
   // ── Loading ──────────────────────────────────────────────
   if (loading) {
     return (
@@ -131,6 +159,179 @@ export default function AdminDashboard() {
           <StatCard label="In Progress"   value={stats.byStatus['In Progress'] || 0}  color="blue2"  />
           <StatCard label="Resolved"      value={stats.byStatus.Resolved      || 0}   color="green"  />
         </div>
+      )}
+
+      {/* ── Feedback & Satisfaction Metrics ───────────────── */}
+      {feedbackStats && (
+        <section className="section" style={{ paddingTop: 0, marginBottom: 'var(--sp-6)' }}>
+          <div className="section-head" style={{ marginBottom: 'var(--sp-4)' }}>
+            <h2>Citizen Satisfaction</h2>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              Based on {feedbackStats.feedbackCount} feedback submission{feedbackStats.feedbackCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Metric cards */}
+          <div className="fb-metric-grid">
+            <FbMetricCard
+              icon="⭐"
+              label="Avg Rating"
+              value={feedbackStats.avgRating !== null ? `${feedbackStats.avgRating} / 5` : '—'}
+              sub={feedbackStats.ratedCount ? `from ${feedbackStats.ratedCount} rating${feedbackStats.ratedCount !== 1 ? 's' : ''}` : 'No ratings yet'}
+              color="yellow"
+            />
+            <FbMetricCard
+              icon="😊"
+              label="Satisfaction Rate"
+              value={feedbackStats.satisfactionRate !== null ? `${feedbackStats.satisfactionRate}%` : '—'}
+              sub={`${feedbackStats.satisfiedCount} of ${feedbackStats.feedbackCount} confirmed resolved`}
+              color="green"
+            />
+            <FbMetricCard
+              icon="📬"
+              label="Feedback Rate"
+              value={feedbackStats.feedbackRate !== null ? `${feedbackStats.feedbackRate}%` : '—'}
+              sub={`${feedbackStats.feedbackCount} of ${feedbackStats.totalResolved} resolved issues`}
+              color="blue"
+            />
+            <FbMetricCard
+              icon="🚨"
+              label="Escalations"
+              value={feedbackStats.escalatedCount}
+              sub="Issues reopened by citizens"
+              color={feedbackStats.escalatedCount > 0 ? 'red' : 'green'}
+            />
+          </div>
+
+          {/* Rating distribution bar chart */}
+          {feedbackStats.ratedCount > 0 && (
+            <div className="fb-dist-card">
+              <h3 className="fb-dist-title">Rating Distribution</h3>
+              <div className="fb-dist-bars">
+                {[5, 4, 3, 2, 1].map(star => {
+                  const count = feedbackStats.ratingDistribution[star] || 0;
+                  const pct   = feedbackStats.ratedCount > 0
+                    ? Math.round((count / feedbackStats.ratedCount) * 100)
+                    : 0;
+                  return (
+                    <div key={star} className="fb-dist-row">
+                      <span className="fb-dist-label">{star} ★</span>
+                      <div className="fb-dist-track">
+                        <div
+                          className="fb-dist-fill"
+                          style={{ width: `${pct}%`, background: star >= 4 ? 'var(--success)' : star === 3 ? '#f59e0b' : 'var(--danger)' }}
+                        />
+                      </div>
+                      <span className="fb-dist-count">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Escalated Issues Panel ────────────────────────── */}
+      {escalated.length > 0 && (
+        <section className="section" style={{ paddingTop: 0, marginBottom: 'var(--sp-6)' }}>
+          <div className="section-head" style={{ marginBottom: 'var(--sp-4)' }}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              🚨 Escalated Issues
+              <span className="fb-escalated-badge">{escalated.length}</span>
+            </h2>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              Citizens reported these as unresolved — requires supervisor review
+            </span>
+          </div>
+
+          <div className="fb-escalated-list">
+            {escalated.map(esc => (
+              <div key={esc._id} className="fb-escalated-row card">
+                {/* Left info */}
+                <div className="fb-esc-info">
+                  <div className="fb-esc-tags">
+                    <span className="tag">{esc.category}</span>
+                    <span className={`badge ${esc.status === 'Resolved' ? 'badge-resolved' : esc.status === 'In Progress' ? 'badge-progress' : 'badge-reported'}`}>
+                      {esc.status}
+                    </span>
+                    <span className="fb-esc-pill">🚨 Escalated</span>
+                  </div>
+                  <h3 className="fb-esc-title"
+                    onClick={() => navigate(`/issues/${esc._id}`)}
+                    style={{ cursor: 'pointer' }}
+                    title="View issue"
+                  >
+                    {esc.title}
+                  </h3>
+                  <div className="fb-esc-meta">
+                    <span>📍 {esc.location}</span>
+                    <span>👤 {esc.reportedBy}</span>
+                    <span>🚨 {new Date(esc.escalatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                  {esc.feedbackComment && (
+                    <p className="fb-esc-comment">
+                      💬 Citizen said: <em>"{esc.feedbackComment}"</em>
+                    </p>
+                  )}
+                  {esc.supervisorNote && (
+                    <p className="fb-esc-supervisor-note">
+                      📋 Supervisor note: <em>"{esc.supervisorNote}"</em>
+                    </p>
+                  )}
+                </div>
+
+                {/* Right action */}
+                <div className="fb-esc-action">
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => navigate(`/issues/${esc._id}`)}
+                  >
+                    View Issue
+                  </button>
+                  {noteTarget === esc._id ? (
+                    <div className="fb-note-form">
+                      <textarea
+                        className="fb-note-input"
+                        placeholder="Add supervisor resolution note…"
+                        value={noteText}
+                        onChange={e => setNoteText(e.target.value)}
+                        rows={2}
+                        maxLength={2000}
+                        disabled={noteSaving}
+                        autoFocus
+                      />
+                      <div className="fb-note-btns">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleSaveNote(esc._id)}
+                          disabled={noteSaving || !noteText.trim()}
+                        >
+                          {noteSaving ? 'Saving…' : 'Save Note'}
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => { setNoteTarget(null); setNoteText(''); }}
+                          disabled={noteSaving}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
+                      onClick={() => { setNoteTarget(esc._id); setNoteText(esc.supervisorNote || ''); }}
+                    >
+                      {esc.supervisorNote ? '✏️ Edit Note' : '📋 Add Note'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* ── Issues Section ────────────────────────────────── */}
@@ -307,6 +508,23 @@ export default function AdminDashboard() {
                       })}
                     </span>
                   </div>
+
+                  {/* ── Satisfied feedback snippet ── shown when wasResolved=true */}
+                  {issue.wasResolved === true && (
+                    <div className="admin-feedback-snippet">
+                      <span className="admin-fb-satisfied">✅ Resolved confirmed</span>
+                      {issue.rating && (
+                        <span className="admin-fb-stars">
+                          {'★'.repeat(issue.rating)}{'☆'.repeat(5 - issue.rating)}
+                        </span>
+                      )}
+                      {issue.feedbackComment && (
+                        <span className="admin-fb-comment">
+                          💬 <em>"{issue.feedbackComment}"</em>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right-side actions: View Details + Status update */}
@@ -562,6 +780,39 @@ export default function AdminDashboard() {
           animation: spin 0.7s linear infinite;
         }
 
+        /* ── Satisfied feedback snippet inside issue row ────────────────── */
+        .admin-feedback-snippet {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-3);
+          margin-top: var(--sp-2);
+          padding: 6px 10px;
+          background: var(--success-light);
+          border: 1px solid #86efac;
+          border-radius: var(--radius-sm);
+          flex-wrap: wrap;
+        }
+        .admin-fb-satisfied {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--success);
+          white-space: nowrap;
+        }
+        .admin-fb-stars {
+          font-size: 13px;
+          color: #f59e0b;
+          letter-spacing: 1px;
+          white-space: nowrap;
+        }
+        .admin-fb-comment {
+          font-size: 11px;
+          color: var(--text-secondary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 320px;
+        }
+
         /* Responsive */
         @media (max-width: 900px) {
           .dash-stats { grid-template-columns: repeat(3, 1fr); }
@@ -585,6 +836,205 @@ export default function AdminDashboard() {
           .admin-issue-title { font-size: 14px; max-width: 200px; }
           .admin-issue-meta  { gap: var(--sp-2); }
         }
+
+        /* ── Feedback metric cards ───────────────────────────────────────── */
+        .fb-metric-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--sp-4);
+          margin-bottom: var(--sp-5);
+        }
+        .fb-metric-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: var(--sp-5);
+          box-shadow: var(--shadow-sm);
+          display: flex;
+          flex-direction: column;
+          gap: var(--sp-2);
+          border-left: 4px solid transparent;
+          transition: box-shadow var(--transition), transform var(--transition);
+        }
+        .fb-metric-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+        .fb-metric-icon { font-size: 22px; line-height: 1; }
+        .fb-metric-value {
+          font-size: 28px;
+          font-weight: 700;
+          line-height: 1;
+          color: var(--text-primary);
+        }
+        .fb-metric-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .fb-metric-sub {
+          font-size: 11px;
+          color: var(--text-muted);
+          line-height: 1.4;
+        }
+        .fb-metric-yellow { border-left-color: #f59e0b; }
+        .fb-metric-yellow .fb-metric-value { color: #f59e0b; }
+        .fb-metric-green  { border-left-color: var(--success); }
+        .fb-metric-green  .fb-metric-value { color: var(--success); }
+        .fb-metric-blue   { border-left-color: var(--primary); }
+        .fb-metric-blue   .fb-metric-value { color: var(--primary); }
+        .fb-metric-red    { border-left-color: var(--danger); }
+        .fb-metric-red    .fb-metric-value { color: var(--danger); }
+
+        /* ── Rating distribution ────────────────────────────────────────── */
+        .fb-dist-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: var(--sp-5);
+          box-shadow: var(--shadow-sm);
+        }
+        .fb-dist-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: var(--sp-4);
+        }
+        .fb-dist-bars { display: flex; flex-direction: column; gap: 8px; }
+        .fb-dist-row {
+          display: grid;
+          grid-template-columns: 32px 1fr 28px;
+          align-items: center;
+          gap: var(--sp-3);
+        }
+        .fb-dist-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+        .fb-dist-track {
+          height: 8px;
+          background: var(--bg);
+          border-radius: 999px;
+          overflow: hidden;
+          border: 1px solid var(--border);
+        }
+        .fb-dist-fill {
+          height: 100%;
+          border-radius: 999px;
+          transition: width 0.4s ease;
+          min-width: 2px;
+        }
+        .fb-dist-count { font-size: 12px; color: var(--text-muted); text-align: right; }
+
+        /* ── Escalated issues panel ─────────────────────────────────────── */
+        .fb-escalated-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: var(--danger-light);
+          color: var(--danger);
+          border: 1px solid #fca5a5;
+          border-radius: 999px;
+          padding: 2px 9px;
+        }
+        .fb-escalated-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sp-3);
+        }
+        .fb-escalated-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: var(--sp-4);
+          align-items: start;
+          padding: var(--sp-4) var(--sp-5);
+          border-left: 4px solid var(--danger);
+          transition: box-shadow var(--transition);
+        }
+        .fb-escalated-row:hover { box-shadow: var(--shadow); }
+        .fb-esc-tags {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-2);
+          margin-bottom: var(--sp-2);
+          flex-wrap: wrap;
+        }
+        .fb-esc-pill {
+          font-size: 11px;
+          font-weight: 700;
+          background: var(--danger-light);
+          color: var(--danger);
+          border: 1px solid #fca5a5;
+          border-radius: 999px;
+          padding: 2px 9px;
+        }
+        .fb-esc-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: var(--sp-2);
+        }
+        .fb-esc-title:hover { color: var(--primary); text-decoration: underline; }
+        .fb-esc-meta {
+          display: flex;
+          gap: var(--sp-4);
+          font-size: 12px;
+          color: var(--text-muted);
+          flex-wrap: wrap;
+          margin-bottom: var(--sp-2);
+        }
+        .fb-esc-comment {
+          font-size: 12px;
+          color: var(--text-secondary);
+          background: var(--warning-light);
+          border: 1px solid #fde68a;
+          border-radius: var(--radius-sm);
+          padding: 6px 10px;
+          margin: var(--sp-2) 0 0;
+        }
+        .fb-esc-supervisor-note {
+          font-size: 12px;
+          color: var(--text-secondary);
+          background: var(--success-light);
+          border: 1px solid #86efac;
+          border-radius: var(--radius-sm);
+          padding: 6px 10px;
+          margin: var(--sp-2) 0 0;
+        }
+        .fb-esc-action {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sp-2);
+          min-width: 140px;
+          align-items: flex-end;
+        }
+        .fb-note-form {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: var(--sp-2);
+        }
+        .fb-note-input {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 7px 10px;
+          font-size: 12px;
+          font-family: var(--font);
+          color: var(--text-primary);
+          background: var(--bg);
+          resize: vertical;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .fb-note-input:focus { border-color: var(--primary); }
+        .fb-note-btns { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+
+        /* ── Responsive feedback ────────────────────────────────────────── */
+        @media (max-width: 900px) {
+          .fb-metric-grid { grid-template-columns: repeat(2, 1fr); }
+          .fb-escalated-row { grid-template-columns: 1fr; }
+          .fb-esc-action { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+        }
+        @media (max-width: 600px) {
+          .fb-metric-grid { grid-template-columns: repeat(2, 1fr); }
+          .fb-metric-value { font-size: 22px; }
+        }
       `}</style>
     </div>
   );
@@ -595,6 +1045,17 @@ function StatCard({ label, value, color }) {
     <div className={`stat-card stat-${color}`}>
       <div className="stat-card-value">{value}</div>
       <div className="stat-card-label">{label}</div>
+    </div>
+  );
+}
+
+function FbMetricCard({ icon, label, value, sub, color }) {
+  return (
+    <div className={`fb-metric-card fb-metric-${color}`}>
+      <span className="fb-metric-icon">{icon}</span>
+      <div className="fb-metric-value">{value}</div>
+      <div className="fb-metric-label">{label}</div>
+      {sub && <div className="fb-metric-sub">{sub}</div>}
     </div>
   );
 }

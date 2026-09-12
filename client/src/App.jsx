@@ -11,6 +11,7 @@ import AdminDashboard     from './pages/AdminDashboard';
 import AdminLogin         from './pages/AdminLogin';
 import NotificationsPage  from './pages/NotificationsPage';
 import Navbar             from './components/Navbar';
+import Chatbot            from './components/Chatbot';
 
 // Protect routes that require login
 function PrivateRoute({ children }) {
@@ -52,6 +53,9 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        {/* Chatbot — only renders for authenticated users; role determined server-side */}
+        <Chatbot />
       </div>
     </NotificationProvider>
   );

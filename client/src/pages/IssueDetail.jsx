@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { UPLOADS_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import FeedbackWidget from '../components/FeedbackWidget';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -29,7 +30,7 @@ function formatDate(dateStr) {
 export default function IssueDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user }  = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [issue, setIssue]     = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +73,13 @@ export default function IssueDetail() {
     } finally {
       setSupporting(false);
     }
+  };
+
+  // Called by FeedbackWidget after a successful submission.
+  // Merges the updated feedback fields into local issue state so the
+  // page reflects the new state immediately — no refetch needed.
+  const handleFeedbackSubmitted = (updatedFields) => {
+    setIssue(prev => ({ ...prev, ...updatedFields }));
   };
 
   if (loading) {
@@ -285,6 +293,30 @@ export default function IssueDetail() {
               )}
             </div>
           </div>
+
+          {/* ── Citizen Feedback widget ────────────────────────────────────
+               Show only to the issue owner when status is Resolved.
+               Admins never see the feedback form.                        */}
+          {user &&
+           !isAdmin &&
+           issue.status === 'Resolved' &&
+           (
+             /* Match by stored ObjectId (issues reported while logged in) */
+             (issue.reportedById && issue.reportedById.toString() === user.id) ||
+             /* Fallback: match by display name (older issues / guest reports) */
+             (issue.reportedBy && issue.reportedBy === user.name)
+           ) && (
+            <div style={{ marginBottom: 'var(--sp-4)' }}>
+              <h3 style={{ marginBottom: 'var(--sp-3)', fontSize: 14,
+                           fontWeight: 700, color: 'var(--text-primary)' }}>
+                Satisfaction Feedback
+              </h3>
+              <FeedbackWidget
+                issue={issue}
+                onFeedbackSubmitted={handleFeedbackSubmitted}
+              />
+            </div>
+          )}
 
           {/* Reporter card */}
           <div className="card" style={{ marginBottom: 'var(--sp-4)' }}>

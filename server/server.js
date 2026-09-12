@@ -2,14 +2,15 @@ const dns = require('dns');
 // Use public DNS servers for MongoDB SRV lookup
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
-const http    = require('http');
-const express = require('express');
+const http       = require('http');
+const express    = require('express');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-const cors     = require('cors');
-const dotenv   = require('dotenv');
-const path     = require('path');
-const jwt      = require('jsonwebtoken');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
+const dotenv     = require('dotenv');
+const path       = require('path');
+const jwt        = require('jsonwebtoken');
+const rateLimit  = require('express-rate-limit');
 
 dotenv.config();
 
@@ -73,10 +74,23 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ───────────────────────────────────────────────────────────────────
+
+// Chatbot rate limiter — 30 messages per user per 10 minutes
+// Keyed on IP; enough headroom for normal use, blocks abuse
+const chatbotLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { reply: 'Too many messages. Please wait a few minutes before trying again.' },
+});
+
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/issues',        require('./routes/issues'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/chatbot',       chatbotLimiter, require('./routes/chatbot'));
+app.use('/api/feedback',      require('./routes/feedback'));
 
 // Health check
 app.get('/', (req, res) => {

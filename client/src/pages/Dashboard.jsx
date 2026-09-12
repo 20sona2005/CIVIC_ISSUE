@@ -96,10 +96,65 @@ export default function Dashboard() {
 
   return (
     <div className="container">
-      {/* ── Page Header ─────────────────────────────────── */}
-      <div className="page-header">
-        <h1>Welcome back, {user.name.split(' ')[0]} 👋</h1>
-        <p>Here's an overview of civic issues in your community.</p>
+
+      {/* ── Hero Section ────────────────────────────────── */}
+      <div className="hero-banner">
+        {/* Left: text + CTA */}
+        <div className="hero-left">
+          <div className="hero-greeting">
+            Welcome back, <span className="hero-name">{user.name.split(' ')[0]}</span> 👋
+          </div>
+          <h1 className="hero-headline">
+            Make your community<br />
+            <span className="hero-highlight">better, together.</span>
+          </h1>
+          <p className="hero-sub">
+            Report civic problems, track resolutions, and help your
+            neighbourhood thrive. Every issue reported is a step toward a
+            cleaner, safer city.
+          </p>
+          <div className="hero-cta-row">
+            <button className="btn btn-primary btn-lg hero-cta-primary"
+              onClick={() => navigate('/report')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Report an Issue
+            </button>
+            <button className="btn btn-outline btn-lg"
+              onClick={() => navigate('/explore')}>
+              Explore Issues
+            </button>
+          </div>
+
+          {/* Quick trust stats */}
+          <div className="hero-trust">
+            <div className="hero-trust-item">
+              <span className="hero-trust-val">{total}</span>
+              <span className="hero-trust-label">Issues tracked</span>
+            </div>
+            <div className="hero-trust-divider" />
+            <div className="hero-trust-item">
+              <span className="hero-trust-val">{resolved}</span>
+              <span className="hero-trust-label">Resolved</span>
+            </div>
+            <div className="hero-trust-divider" />
+            <div className="hero-trust-item">
+              <span className="hero-trust-val">
+                {total > 0 ? Math.round((resolved / total) * 100) : 0}%
+              </span>
+              <span className="hero-trust-label">Resolution rate</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: SVG city illustration */}
+        <div className="hero-right" aria-hidden="true">
+          <CityIllustration />
+        </div>
       </div>
 
       {/* ── Stats Row ───────────────────────────────────── */}
@@ -108,16 +163,6 @@ export default function Dashboard() {
         <StatCard label="Reported"        value={reported} color="yellow" />
         <StatCard label="In Progress"     value={inProg}   color="blue2"  />
         <StatCard label="Resolved"        value={resolved} color="green"  />
-      </div>
-
-      {/* ── Quick Actions ───────────────────────────────── */}
-      <div className="dash-actions">
-        <button className="btn btn-primary btn-lg" onClick={() => navigate('/report')}>
-          + Report an Issue
-        </button>
-        <button className="btn btn-outline btn-lg" onClick={() => navigate('/explore')}>
-          Explore All Issues
-        </button>
       </div>
 
       {/* ── Categories ──────────────────────────────────── */}
@@ -183,6 +228,148 @@ export default function Dashboard() {
       </section>
 
       <style>{`
+        /* ── Hero banner ────────────────────────────────────────────────── */
+        .hero-banner {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: var(--sp-8);
+          align-items: center;
+          background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
+          border-radius: var(--radius-lg);
+          padding: var(--sp-10) var(--sp-10);
+          margin-bottom: var(--sp-8);
+          position: relative;
+          overflow: hidden;
+        }
+        /* decorative radial glow */
+        .hero-banner::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.08) 0%, transparent 55%),
+            radial-gradient(ellipse at 10% 90%, rgba(255,255,255,0.05) 0%, transparent 50%);
+          pointer-events: none;
+        }
+
+        /* Left side */
+        .hero-left {
+          position: relative;
+          z-index: 1;
+          color: #fff;
+        }
+        .hero-greeting {
+          font-size: 14px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.78);
+          margin-bottom: var(--sp-2);
+          letter-spacing: 0.01em;
+        }
+        .hero-name {
+          color: #93c5fd;
+          font-weight: 700;
+        }
+        .hero-headline {
+          font-size: 36px;
+          font-weight: 800;
+          line-height: 1.18;
+          letter-spacing: -0.6px;
+          color: #fff;
+          margin-bottom: var(--sp-4);
+        }
+        .hero-highlight {
+          color: #93c5fd;
+        }
+        .hero-sub {
+          font-size: 14px;
+          color: rgba(255,255,255,0.72);
+          line-height: 1.7;
+          max-width: 440px;
+          margin-bottom: var(--sp-6);
+        }
+        .hero-cta-row {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-3);
+          margin-bottom: var(--sp-6);
+          flex-wrap: wrap;
+        }
+        .hero-cta-primary {
+          background: #fff !important;
+          color: var(--primary) !important;
+          border-color: #fff !important;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+          transition: transform 0.15s, box-shadow 0.15s !important;
+        }
+        .hero-cta-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.22) !important;
+          background: #f0f9ff !important;
+        }
+        .hero-banner .btn-outline {
+          border-color: rgba(255,255,255,0.55) !important;
+          color: #fff !important;
+          background: rgba(255,255,255,0.08) !important;
+          backdrop-filter: blur(4px);
+          transition: background 0.15s, transform 0.15s !important;
+        }
+        .hero-banner .btn-outline:hover {
+          background: rgba(255,255,255,0.18) !important;
+          transform: translateY(-2px);
+        }
+
+        /* Trust strip */
+        .hero-trust {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-5);
+          padding-top: var(--sp-6);
+          margin-top: var(--sp-2);
+          border-top: 1px solid rgba(255,255,255,0.18);
+        }
+        .hero-trust-item {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .hero-trust-val {
+          font-size: 22px;
+          font-weight: 800;
+          color: #fff;
+          line-height: 1;
+        }
+        .hero-trust-label {
+          font-size: 11px;
+          color: rgba(255,255,255,0.62);
+          font-weight: 500;
+          white-space: nowrap;
+        }
+        .hero-trust-divider {
+          width: 1px;
+          height: 32px;
+          background: rgba(255,255,255,0.22);
+          flex-shrink: 0;
+        }
+
+        /* Right side illustration */
+        .hero-right {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 260px;
+        }
+        .hero-right svg {
+          width: 100%;
+          height: 100%;
+          filter: drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+        }
+
         /* Stats */
         .dash-stats {
           display: grid;
@@ -222,13 +409,6 @@ export default function Dashboard() {
         .stat-blue2  .stat-card-value { color: #0891b2; }
         .stat-green  { border-left-color: var(--success); }
         .stat-green  .stat-card-value { color: var(--success); }
-
-        /* Quick actions */
-        .dash-actions {
-          display: flex;
-          gap: var(--sp-4);
-          margin-bottom: var(--sp-8);
-        }
 
         /* Category grid */
         .cat-grid {
@@ -285,14 +465,21 @@ export default function Dashboard() {
 
         /* Responsive */
         @media (max-width: 900px) {
+          .hero-banner { grid-template-columns: 1fr; padding: var(--sp-8) var(--sp-6); }
+          .hero-right  { display: none; }
+          .hero-headline { font-size: 28px; }
           .dash-stats { grid-template-columns: repeat(2, 1fr); }
           .cat-grid   { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 600px) {
+          .hero-banner  { padding: var(--sp-6) var(--sp-5); border-radius: var(--radius); }
+          .hero-headline{ font-size: 24px; }
+          .hero-sub     { font-size: 13px; }
+          .hero-trust   { gap: var(--sp-3); }
+          .hero-trust-val { font-size: 18px; }
           .dash-stats   { grid-template-columns: repeat(2, 1fr); }
           .cat-grid     { grid-template-columns: repeat(2, 1fr); }
-          .dash-actions { flex-direction: column; }
-          .stat-card-value { font-size: 26px; }
+          .hero-cta-row { flex-direction: column; align-items: stretch; }
         }
       `}</style>
     </div>
@@ -306,5 +493,173 @@ function StatCard({ label, value, color }) {
       <div className="stat-card-value">{value}</div>
       <div className="stat-card-label">{label}</div>
     </div>
+  );
+}
+
+// ── Inline SVG city illustration ─────────────────────────────────────────────
+// Pure SVG — no external asset needed. Draws a stylised city skyline with
+// a location pin, road markings, and subtle animated pulse on the pin.
+function CityIllustration() {
+  return (
+    <svg viewBox="0 0 380 260" fill="none" xmlns="http://www.w3.org/2000/svg"
+      role="img" aria-label="City illustration">
+
+      {/* Sky gradient */}
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#1e40af" stopOpacity="0.0" />
+          <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.0" />
+        </linearGradient>
+        <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      {/* Ground */}
+      <rect x="0" y="210" width="380" height="50" rx="4"
+        fill="rgba(255,255,255,0.08)" />
+
+      {/* Road */}
+      <rect x="120" y="210" width="140" height="50"
+        fill="rgba(255,255,255,0.06)" />
+      {/* Road centre dashes */}
+      {[0,1,2,3,4].map(i => (
+        <rect key={i} x="188" y={218 + i * 10} width="4" height="6" rx="2"
+          fill="rgba(255,255,255,0.3)" />
+      ))}
+
+      {/* Building 1 — far left, short wide */}
+      <rect x="10" y="150" width="55" height="65" rx="3"
+        fill="rgba(255,255,255,0.10)" />
+      <rect x="10" y="143" width="55" height="12" rx="3"
+        fill="rgba(255,255,255,0.15)" />
+      {/* windows */}
+      {[0,1,2].map(col => [0,1,2,3].map(row => (
+        <rect key={`b1-${col}-${row}`}
+          x={18 + col * 16} y={156 + row * 14}
+          width="8" height="8" rx="1"
+          fill={row === 1 && col === 1 ? 'rgba(250,204,21,0.7)' : 'rgba(255,255,255,0.18)'}
+        />
+      )))}
+
+      {/* Building 2 — left-centre, tallest */}
+      <rect x="75" y="100" width="60" height="115" rx="3"
+        fill="rgba(255,255,255,0.13)" />
+      <rect x="75" y="90" width="60" height="15" rx="3"
+        fill="rgba(255,255,255,0.18)" />
+      {/* antenna */}
+      <line x1="105" y1="90" x2="105" y2="74"
+        stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="105" cy="72" r="3" fill="rgba(250,204,21,0.8)" />
+      {/* windows */}
+      {[0,1,2].map(col => [0,1,2,3,4,5].map(row => (
+        <rect key={`b2-${col}-${row}`}
+          x={83 + col * 18} y={104 + row * 17}
+          width="10" height="10" rx="1.5"
+          fill={
+            (col === 0 && row === 2) || (col === 2 && row === 4)
+              ? 'rgba(250,204,21,0.7)'
+              : 'rgba(255,255,255,0.18)'
+          }
+        />
+      )))}
+
+      {/* Building 3 — centre, medium with arch top */}
+      <rect x="148" y="120" width="50" height="95" rx="3"
+        fill="rgba(255,255,255,0.10)" />
+      <path d="M148 125 Q173 108 198 125" fill="rgba(255,255,255,0.15)" />
+      {[0,1].map(col => [0,1,2,3,4].map(row => (
+        <rect key={`b3-${col}-${row}`}
+          x={156 + col * 22} y={128 + row * 17}
+          width="11" height="11" rx="1.5"
+          fill={col === 1 && row === 3 ? 'rgba(250,204,21,0.7)' : 'rgba(255,255,255,0.18)'}
+        />
+      )))}
+
+      {/* Building 4 — right-centre, stepped */}
+      <rect x="212" y="130" width="65" height="85" rx="3"
+        fill="rgba(255,255,255,0.12)" />
+      <rect x="222" y="115" width="45" height="20" rx="3"
+        fill="rgba(255,255,255,0.15)" />
+      <rect x="232" y="105" width="25" height="15" rx="3"
+        fill="rgba(255,255,255,0.18)" />
+      {[0,1,2].map(col => [0,1,2,3].map(row => (
+        <rect key={`b4-${col}-${row}`}
+          x={220 + col * 19} y={138 + row * 17}
+          width="11" height="11" rx="1.5"
+          fill={col === 1 && row === 0 ? 'rgba(250,204,21,0.7)' : 'rgba(255,255,255,0.18)'}
+        />
+      )))}
+
+      {/* Building 5 — far right */}
+      <rect x="292" y="155" width="75" height="60" rx="3"
+        fill="rgba(255,255,255,0.09)" />
+      <rect x="292" y="148" width="75" height="12" rx="3"
+        fill="rgba(255,255,255,0.14)" />
+      {[0,1,2,3].map(col => [0,1,2].map(row => (
+        <rect key={`b5-${col}-${row}`}
+          x={300 + col * 17} y={162 + row * 16}
+          width="9" height="10" rx="1"
+          fill={col === 2 && row === 1 ? 'rgba(250,204,21,0.7)' : 'rgba(255,255,255,0.15)'}
+        />
+      )))}
+
+      {/* Trees */}
+      {[42, 68, 310, 358].map((x, i) => (
+        <g key={`tree-${i}`}>
+          <rect x={x - 2} y="200" width="4" height="14" rx="2"
+            fill="rgba(255,255,255,0.25)" />
+          <ellipse cx={x} cy="198" rx="10" ry="12"
+            fill="rgba(74,222,128,0.30)" />
+        </g>
+      ))}
+
+      {/* Location pin — centred over building 3 */}
+      <g filter="url(#glow)">
+        {/* Pulse ring */}
+        <circle cx="173" cy="88" r="18" fill="rgba(250,204,21,0.12)">
+          <animate attributeName="r" values="14;22;14" dur="2.4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite" />
+        </circle>
+        {/* Pin body */}
+        <path d="M173 68 C165 68 158 75 158 84 C158 96 173 108 173 108 C173 108 188 96 188 84 C188 75 181 68 173 68Z"
+          fill="#fbbf24" />
+        {/* Pin inner dot */}
+        <circle cx="173" cy="84" r="5" fill="rgba(255,255,255,0.9)" />
+      </g>
+
+      {/* Floating badge */}
+      <g transform="translate(200, 58)">
+        <rect width="72" height="24" rx="12" fill="rgba(255,255,255,0.95)" />
+        <text x="36" y="16" textAnchor="middle"
+          fontSize="10" fontWeight="700" fill="#1e3a8a"
+          fontFamily="Inter, system-ui, sans-serif">
+          📍 Civic Issue
+        </text>
+      </g>
+
+      {/* Small floating status chips */}
+      <g transform="translate(28, 72)">
+        <rect width="64" height="20" rx="10" fill="rgba(22,163,74,0.85)" />
+        <text x="32" y="14" textAnchor="middle"
+          fontSize="9" fontWeight="700" fill="#fff"
+          fontFamily="Inter, system-ui, sans-serif">
+          ✓ Resolved
+        </text>
+      </g>
+      <g transform="translate(294, 110)">
+        <rect width="70" height="20" rx="10" fill="rgba(217,119,6,0.85)" />
+        <text x="35" y="14" textAnchor="middle"
+          fontSize="9" fontWeight="700" fill="#fff"
+          fontFamily="Inter, system-ui, sans-serif">
+          🔄 In Progress
+        </text>
+      </g>
+    </svg>
   );
 }
