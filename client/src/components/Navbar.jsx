@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t, i18n } = useTranslation();
+
+  const currentLang = i18n.language?.startsWith('ta') ? 'ta' : 'en';
+
+  const switchLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+  };
 
   const handleLogout = () => {
     logout();
@@ -17,13 +25,13 @@ export default function Navbar() {
   if (!user) return null;
 
   const citizenLinks = [
-    { to: '/',        label: 'Dashboard', end: true },
-    { to: '/explore', label: 'Explore'             },
-    { to: '/report',  label: 'Report Issue'        },
+    { to: '/',        label: t('nav.dashboard'), end: true },
+    { to: '/explore', label: t('nav.explore')             },
+    { to: '/report',  label: t('nav.reportIssue')        },
   ];
 
   const adminLinks = [
-    { to: '/admin', label: 'Admin Dashboard', end: true },
+    { to: '/admin', label: t('nav.adminDashboard'), end: true },
   ];
 
   const links = isAdmin ? adminLinks : citizenLinks;
@@ -57,7 +65,7 @@ export default function Navbar() {
 
           {/* Role pill */}
           <span className={`nav-role-pill ${isAdmin ? 'nav-role-admin' : 'nav-role-citizen'}`}>
-            {isAdmin ? 'Admin' : 'Citizen'}
+            {isAdmin ? t('nav.admin') : t('nav.citizen')}
           </span>
 
           {/* User name */}
@@ -66,21 +74,39 @@ export default function Navbar() {
           {/* Notification bell */}
           <NotificationBell />
 
+          {/* Language switcher */}
+          <div className="nav-lang-switcher" aria-label={t('nav.language')}>
+            <button
+              className={`lang-btn ${currentLang === 'en' ? 'lang-btn--active' : ''}`}
+              onClick={() => switchLanguage('en')}
+              title="English"
+            >
+              EN
+            </button>
+            <span className="lang-sep">|</span>
+            <button
+              className={`lang-btn ${currentLang === 'ta' ? 'lang-btn--active' : ''}`}
+              onClick={() => switchLanguage('ta')}
+              title="தமிழ்"
+            >
+              தமிழ்
+            </button>
+          </div>
+
           {/* Logout */}
           <button className="btn btn-outline btn-sm" onClick={handleLogout}>
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
 
         {/* Mobile hamburger */}
         <button
           className="nav-hamburger"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(o => !o)}
         >
           {menuOpen ? (
-            /* X icon */
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
@@ -88,7 +114,6 @@ export default function Navbar() {
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           ) : (
-            /* Hamburger icon */
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
@@ -110,7 +135,7 @@ export default function Navbar() {
             <div>
               <div className="nav-mobile-name">{user.name}</div>
               <span className={`nav-role-pill ${isAdmin ? 'nav-role-admin' : 'nav-role-citizen'}`}>
-                {isAdmin ? 'Admin' : 'Citizen'}
+                {isAdmin ? t('nav.admin') : t('nav.citizen')}
               </span>
             </div>
           </div>
@@ -127,14 +152,31 @@ export default function Navbar() {
                 {label}
               </NavLink>
             ))}
-            {/* Notifications link in mobile */}
             <NavLink
               to="/notifications"
               className={({ isActive }) => 'nav-mobile-link' + (isActive ? ' active' : '')}
               onClick={() => setMenuOpen(false)}
             >
-              🔔 Notifications
+              {t('nav.notifications')}
             </NavLink>
+          </div>
+
+          {/* Mobile language switcher */}
+          <div className="nav-mobile-lang">
+            <span className="nav-mobile-lang-label">{t('nav.language')}:</span>
+            <button
+              className={`lang-btn ${currentLang === 'en' ? 'lang-btn--active' : ''}`}
+              onClick={() => switchLanguage('en')}
+            >
+              EN
+            </button>
+            <span className="lang-sep">|</span>
+            <button
+              className={`lang-btn ${currentLang === 'ta' ? 'lang-btn--active' : ''}`}
+              onClick={() => switchLanguage('ta')}
+            >
+              தமிழ்
+            </button>
           </div>
 
           <button
@@ -142,7 +184,7 @@ export default function Navbar() {
             style={{ marginTop: 'var(--sp-4)' }}
             onClick={handleLogout}
           >
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
       )}
@@ -187,6 +229,43 @@ export default function Navbar() {
           max-width: 120px;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        /* ── Language switcher ── */
+        .nav-lang-switcher {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          padding: 3px 8px;
+          flex-shrink: 0;
+        }
+        .lang-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          font-family: var(--font);
+          color: var(--text-muted);
+          padding: 2px 5px;
+          border-radius: 999px;
+          transition: color 0.15s, background 0.15s;
+          white-space: nowrap;
+          line-height: 1.4;
+        }
+        .lang-btn:hover { color: var(--primary); }
+        .lang-btn--active {
+          color: var(--primary);
+          background: var(--primary-light);
+        }
+        .lang-sep {
+          font-size: 11px;
+          color: var(--border);
+          user-select: none;
+          line-height: 1;
         }
 
         /* ── Hamburger (hidden on desktop) ── */
@@ -269,6 +348,21 @@ export default function Navbar() {
           background: var(--primary-light);
           color: var(--primary);
           font-weight: 600;
+        }
+
+        /* Mobile language switcher */
+        .nav-mobile-lang {
+          display: flex;
+          align-items: center;
+          gap: var(--sp-2);
+          padding: var(--sp-3) var(--sp-3);
+          border-top: 1px solid var(--border);
+          margin-top: var(--sp-3);
+        }
+        .nav-mobile-lang-label {
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--text-muted);
         }
 
         /* ── Responsive ── */

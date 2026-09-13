@@ -3,6 +3,7 @@ import { UPLOADS_URL } from '../api/axios';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const statusClass = {
   'Reported':    'badge-reported',
@@ -43,6 +44,7 @@ function ImagePlaceholder({ category }) {
 export default function IssueCard({ issue }) {
   const navigate = useNavigate();
   const { user }  = useAuth();
+  const { t }     = useTranslation();
 
   const [supportCount, setSupportCount]   = useState(issue.supportCount || 0);
   const [supported, setSupported]         = useState(false);
@@ -71,7 +73,7 @@ export default function IssueCard({ issue }) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && navigate(`/issues/${issue._id}`)}
-      aria-label={`View issue: ${issue.title}`}
+      aria-label={t('issueCard.aria', { title: issue.title })}
     >
       {/* Image / Placeholder */}
       <div className="issue-card-img-wrap">
@@ -97,7 +99,7 @@ export default function IssueCard({ issue }) {
             fontSize: 10, fontWeight: 700, padding: '2px 8px',
             borderRadius: 20, letterSpacing: '0.03em',
           }}>
-            POSSIBLE DUPLICATE
+            {t('issueCard.possibleDuplicate')}
           </span>
         )}
       </div>
@@ -144,7 +146,7 @@ export default function IssueCard({ issue }) {
               <button
                 onClick={handleSupport}
                 disabled={supporting || supported}
-                title={supported ? 'You supported this' : 'Support this issue'}
+                title={supported ? t('issueCard.supportedTitle') : t('issueCard.supportTitle')}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 3,
                   padding: '2px 8px', borderRadius: 20, border: 'none',
@@ -154,7 +156,7 @@ export default function IssueCard({ issue }) {
                   transition: 'all 0.15s',
                 }}
               >
-                {supported ? '✓' : '👍'} {supporting ? '…' : supported ? 'Supported' : 'Support'}
+                {supported ? '✓' : '👍'} {supporting ? t('issueCard.supporting') : supported ? t('issueCard.supported') : t('issueCard.supportBtn')}
               </button>
             )}
           </div>

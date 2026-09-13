@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +25,7 @@ function EyeOffIcon() {
 }
 
 export default function AdminLogin() {
+  const { t } = useTranslation();
   const [form, setForm]       = useState({ email: '', password: '' });
   const [showPw, setShowPw]   = useState(false);
   const [error, setError]     = useState('');
@@ -50,14 +52,14 @@ export default function AdminLogin() {
         password: form.password,
       });
       if (data.user.role !== 'admin') {
-        setError('Access denied. This portal is for admins only.');
+        setError(t('adminLogin.errorAccessDenied'));
         setLoading(false);
         return;
       }
       login(data.user, data.token);
       navigate('/admin');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      setError(err.response?.data?.message || t('adminLogin.errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -75,23 +77,21 @@ export default function AdminLogin() {
             </svg>
             CivicPulse
           </div>
-          <h1 className="auth-headline">Admin Portal</h1>
-          <p className="auth-sub">
-            Manage reported civic issues, update statuses, and oversee community activity from one place.
-          </p>
+          <h1 className="auth-headline">{t('adminLogin.headline')}</h1>
+          <p className="auth-sub">{t('adminLogin.sub')}</p>
           <div className="auth-features">
             {[
               {
                 icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>,
-                text: 'View and manage all reported issues',
+                text: t('adminLogin.feature1'),
               },
               {
                 icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-                text: 'Update issue statuses in real time',
+                text: t('adminLogin.feature2'),
               },
               {
                 icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-                text: 'Monitor community engagement',
+                text: t('adminLogin.feature3'),
               },
             ].map(({ icon, text }) => (
               <div key={text} className="auth-feature">
@@ -111,12 +111,12 @@ export default function AdminLogin() {
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            Admin Access Only
+            {t('adminLogin.badge')}
           </div>
 
           <div className="auth-form-header">
-            <h2>Admin Sign In</h2>
-            <p>Sign in to manage civic issues</p>
+            <h2>{t('adminLogin.formTitle')}</h2>
+            <p>{t('adminLogin.formSub')}</p>
           </div>
 
           {error && (
@@ -127,11 +127,11 @@ export default function AdminLogin() {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label className="form-label" htmlFor="email">Email Address</label>
+              <label className="form-label" htmlFor="email">{t('adminLogin.email')}</label>
               <input
                 id="email" name="email" type="email"
                 className="form-input"
-                placeholder="admin@civicpulse.com"
+                placeholder={t('adminLogin.emailPlaceholder')}
                 value={form.email}
                 onChange={handleChange}
                 required autoComplete="email" autoFocus
@@ -139,13 +139,13 @@ export default function AdminLogin() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="password">Password</label>
+              <label className="form-label" htmlFor="password">{t('adminLogin.password')}</label>
               <div className="pw-wrap">
                 <input
                   id="password" name="password"
                   type={showPw ? 'text' : 'password'}
                   className="form-input"
-                  placeholder="••••••••"
+                  placeholder={t('adminLogin.passwordPlaceholder')}
                   value={form.password}
                   onChange={handleChange}
                   required autoComplete="current-password"
@@ -154,7 +154,7 @@ export default function AdminLogin() {
                   type="button"
                   className="pw-toggle"
                   onClick={() => setShowPw(v => !v)}
-                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  aria-label={showPw ? t('adminLogin.hidePassword') : t('adminLogin.showPassword')}
                 >
                   {showPw ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
@@ -168,155 +168,82 @@ export default function AdminLogin() {
               style={{ marginTop: 'var(--sp-2)' }}
             >
               {loading ? (
-                <><span className="spinner spinner-sm" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} /> Signing in…</>
-              ) : 'Sign In as Admin'}
+                <><span className="spinner spinner-sm" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} /> {t('adminLogin.submitting')}</>
+              ) : t('adminLogin.submit')}
             </button>
           </form>
 
           <div className="auth-footer-links" style={{ marginTop: 'var(--sp-5)' }}>
             <p className="auth-switch">
-              Not an admin?{' '}
-              <a href="/login" className="auth-switch-btn">Go to citizen login →</a>
+              {t('adminLogin.notAdmin')}{' '}
+              <a href="/login" className="auth-switch-btn">{t('adminLogin.citizenLogin')}</a>
             </p>
           </div>
         </div>
       </div>
 
       <style>{`
-        .auth-page {
-          display: flex;
-          min-height: 100vh;
-        }
+        .auth-page { display: flex; min-height: 100vh; }
         .auth-left {
           flex: 1;
           background: linear-gradient(150deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--sp-12) var(--sp-10);
-          position: relative;
-          overflow: hidden;
+          display: flex; align-items: center; justify-content: center;
+          padding: var(--sp-12) var(--sp-10); position: relative; overflow: hidden;
         }
         .auth-left::after {
-          content: '';
-          position: absolute;
-          inset: 0;
+          content: ''; position: absolute; inset: 0;
           background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.07) 0%, transparent 60%);
           pointer-events: none;
         }
-        .admin-left {
-          background: linear-gradient(150deg, #0f172a 0%, #1e293b 55%, #334155 100%);
-        }
-        .auth-left-content {
-          max-width: 400px;
-          color: #fff;
-          position: relative;
-          z-index: 1;
-        }
+        .admin-left { background: linear-gradient(150deg, #0f172a 0%, #1e293b 55%, #334155 100%); }
+        .auth-left-content { max-width: 400px; color: #fff; position: relative; z-index: 1; }
         .auth-brand-logo {
-          display: flex;
-          align-items: center;
-          gap: var(--sp-2);
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: -0.3px;
-          margin-bottom: var(--sp-8);
-          opacity: 0.92;
+          display: flex; align-items: center; gap: var(--sp-2);
+          font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
+          margin-bottom: var(--sp-8); opacity: 0.92;
         }
         .auth-headline {
-          font-size: 34px;
-          font-weight: 700;
-          line-height: 1.2;
-          letter-spacing: -0.5px;
-          color: #fff;
-          margin-bottom: var(--sp-4);
+          font-size: 34px; font-weight: 700; line-height: 1.2;
+          letter-spacing: -0.5px; color: #fff; margin-bottom: var(--sp-4);
         }
-        .auth-sub {
-          font-size: 15px;
-          color: rgba(255,255,255,0.78);
-          line-height: 1.65;
-          margin-bottom: var(--sp-8);
-        }
+        .auth-sub { font-size: 15px; color: rgba(255,255,255,0.78); line-height: 1.65; margin-bottom: var(--sp-8); }
         .auth-features { display: flex; flex-direction: column; gap: var(--sp-4); }
         .auth-feature {
-          display: flex;
-          align-items: center;
-          gap: var(--sp-3);
-          font-size: 14px;
-          color: rgba(255,255,255,0.88);
-          font-weight: 500;
+          display: flex; align-items: center; gap: var(--sp-3);
+          font-size: 14px; color: rgba(255,255,255,0.88); font-weight: 500;
         }
         .auth-feature-icon {
-          width: 30px; height: 30px;
-          border-radius: var(--radius-sm);
+          width: 30px; height: 30px; border-radius: var(--radius-sm);
           background: rgba(255,255,255,0.18);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-
-        /* Right */
         .auth-right {
-          width: 500px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--sp-10);
-          background: var(--surface);
+          width: 500px; display: flex; align-items: center; justify-content: center;
+          padding: var(--sp-10); background: var(--surface);
         }
-        .auth-form-box {
-          width: 100%;
-          max-width: 390px;
-          animation: authFadeIn 0.3s ease;
-        }
+        .auth-form-box { width: 100%; max-width: 390px; animation: authFadeIn 0.3s ease; }
         @keyframes authFadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
-        /* Admin badge */
         .admin-login-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: #fef3c7;
-          color: #92400e;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          padding: 5px 12px;
-          border-radius: 999px;
-          margin-bottom: var(--sp-5);
+          display: inline-flex; align-items: center; gap: 5px;
+          background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700;
+          letter-spacing: 0.04em; text-transform: uppercase;
+          padding: 5px 12px; border-radius: 999px; margin-bottom: var(--sp-5);
           border: 1px solid #fde68a;
         }
-
-        /* Form header */
         .auth-form-header { margin-bottom: var(--sp-6); }
         .auth-form-header h2 { margin-bottom: 4px; color: var(--text-primary); }
         .auth-form-header p  { font-size: 14px; color: var(--text-secondary); }
-
-        /* Footer links */
         .auth-footer-links { display: flex; flex-direction: column; gap: var(--sp-2); }
-        .auth-switch {
-          text-align: center;
-          font-size: 13px;
-          color: var(--text-secondary);
-          margin: 0;
-        }
+        .auth-switch { text-align: center; font-size: 13px; color: var(--text-secondary); margin: 0; }
         .auth-switch-btn {
-          background: none; border: none;
-          color: var(--primary);
-          font-size: 13px; font-weight: 500;
-          cursor: pointer; padding: 0;
-          font-family: var(--font);
-          text-decoration: none;
+          background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 500;
+          cursor: pointer; padding: 0; font-family: var(--font); text-decoration: none;
           transition: color var(--transition-fast);
         }
-        .auth-switch-btn:hover {
-          color: var(--primary-hover);
-          text-decoration: underline;
-        }
-
+        .auth-switch-btn:hover { color: var(--primary-hover); text-decoration: underline; }
         @media (max-width: 768px) {
           .auth-page   { flex-direction: column; }
           .auth-left   { padding: var(--sp-10) var(--sp-6); min-height: 220px; }
