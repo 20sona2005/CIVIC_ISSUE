@@ -10,6 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useNotifications } from '../context/NotificationContext';
 
 // ── Relative time helper ─────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ function BellIcon() {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function NotificationBell() {
   const navigate  = useNavigate();
+  const { t } = useTranslation();
   const { notifications, unreadCount, loading, fetchNotifications, markRead, markAllRead } =
     useNotifications();
 
@@ -125,13 +127,13 @@ export default function NotificationBell() {
   const displayList = notifications.slice(0, 8);
 
   return (
-    <div className="notif-bell-wrap" role="region" aria-label="Notifications">
+    <div className="notif-bell-wrap" role="region" aria-label={t('notifBell.regionAria', 'Notifications')}>
       {/* Bell button */}
       <button
         ref={bellRef}
         className={`notif-bell-btn ${open ? 'notif-bell-btn--open' : ''}`}
         onClick={handleBellClick}
-        aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+        aria-label={unreadCount > 0 ? `${t('nav.notifications')}, ${unreadCount} unread` : t('nav.notifications')}
         aria-expanded={open}
         aria-haspopup="true"
       >
@@ -149,23 +151,19 @@ export default function NotificationBell() {
           ref={panelRef}
           className="notif-panel"
           role="dialog"
-          aria-label="Notifications panel"
+          aria-label={t('notifications.title')}
         >
           {/* Panel header */}
           <div className="notif-panel__header">
             <span className="notif-panel__heading">
-              🔔 Notifications
+              🔔 {t('notifications.title')}
               {unreadCount > 0 && (
                 <span className="notif-panel__count">{unreadCount}</span>
               )}
             </span>
             {unreadCount > 0 && (
-              <button
-                className="notif-panel__mark-all"
-                onClick={handleMarkAll}
-                title="Mark all as read"
-              >
-                Mark all read
+              <button className="notif-panel__mark-all" onClick={handleMarkAll} title={t('notifications.markAllRead')}>
+                {t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -181,7 +179,7 @@ export default function NotificationBell() {
             {!loading && displayList.length === 0 && (
               <div className="notif-panel__empty">
                 <span style={{ fontSize: 28 }}>🔕</span>
-                <p>No notifications yet</p>
+                <p>{t('notifications.noNotifsTitle')}</p>
               </div>
             )}
 
@@ -197,11 +195,8 @@ export default function NotificationBell() {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="notif-panel__footer">
-              <button
-                className="notif-panel__view-all"
-                onClick={() => { setOpen(false); navigate('/notifications'); }}
-              >
-                View all notifications →
+              <button className="notif-panel__view-all" onClick={() => { setOpen(false); navigate('/notifications'); }}>
+                {t('notifications.viewAllBtn')}
               </button>
             </div>
           )}

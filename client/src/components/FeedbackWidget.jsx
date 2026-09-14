@@ -16,30 +16,30 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 // ── Star rating sub-component ─────────────────────────────────────────────────
 function StarRating({ value, onChange, disabled }) {
   const [hovered, setHovered] = useState(0);
-
-  const labels = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Very Good', 5: 'Excellent' };
-
+  const { t } = useTranslation();
+  const labels = {
+    1: t('feedback.poor'), 2: t('feedback.fair'),
+    3: t('feedback.good'), 4: t('feedback.veryGood'), 5: t('feedback.excellent'),
+  };
   return (
     <div className="fw-stars-wrap">
-      <div className="fw-stars" role="group" aria-label="Rate the service">
+      <div className="fw-stars" role="group" aria-label={t('feedback.rateAria')}>
         {[1, 2, 3, 4, 5].map((star) => {
           const active = star <= (hovered || value);
           return (
-            <button
-              key={star}
-              type="button"
+            <button key={star} type="button"
               className={`fw-star ${active ? 'fw-star-active' : ''}`}
               onClick={() => !disabled && onChange(star)}
               onMouseEnter={() => !disabled && setHovered(star)}
               onMouseLeave={() => !disabled && setHovered(0)}
               aria-label={`${star} star${star !== 1 ? 's' : ''} — ${labels[star]}`}
-              disabled={disabled}
-            >
+              disabled={disabled}>
               ★
             </button>
           );
@@ -54,6 +54,7 @@ function StarRating({ value, onChange, disabled }) {
 
 // ── Main widget ───────────────────────────────────────────────────────────────
 export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
+  const { t } = useTranslation();
   // If feedback already submitted, show the read-only summary instead
   const alreadySubmitted = issue.feedbackAt !== null && issue.wasResolved !== null;
 
@@ -84,7 +85,7 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
       setStep('done');
       if (onFeedbackSubmitted) onFeedbackSubmitted(data.issue);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit feedback. Please try again.');
+      setError(err.response?.data?.message || t('feedback.submitError'));
     } finally {
       setLoading(false);
     }
@@ -106,26 +107,18 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
           <div className="fw-header">
             <span className="fw-emoji">🔍</span>
             <div>
-              <h3 className="fw-title">Was your issue resolved?</h3>
-              <p className="fw-sub">Let us know if the problem has been fixed.</p>
+              <h3 className="fw-title">{t('feedback.askTitle')}</h3>
+              <p className="fw-sub">{t('feedback.askSub')}</p>
             </div>
           </div>
           <div className="fw-ask-btns">
-            <button
-              className="fw-ask-btn fw-ask-yes"
-              onClick={() => { setWasResolved(true);  setStep('rate'); }}
-              type="button"
-            >
+            <button className="fw-ask-btn fw-ask-yes" onClick={() => { setWasResolved(true); setStep('rate'); }} type="button">
               <span className="fw-ask-icon">👍</span>
-              <span>Yes, it's fixed!</span>
+              <span>{t('feedback.yesFixed')}</span>
             </button>
-            <button
-              className="fw-ask-btn fw-ask-no"
-              onClick={() => { setWasResolved(false); setStep('confirm-no'); }}
-              type="button"
-            >
+            <button className="fw-ask-btn fw-ask-no" onClick={() => { setWasResolved(false); setStep('confirm-no'); }} type="button">
               <span className="fw-ask-icon">👎</span>
-              <span>No, still a problem</span>
+              <span>{t('feedback.noStillProblem')}</span>
             </button>
           </div>
         </>
@@ -137,22 +130,19 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
           <div className="fw-header">
             <span className="fw-emoji">⭐</span>
             <div>
-              <h3 className="fw-title">Rate the service</h3>
-              <p className="fw-sub">How satisfied are you with how this was handled?</p>
+              <h3 className="fw-title">{t('feedback.rateTitle')}</h3>
+              <p className="fw-sub">{t('feedback.rateSub')}</p>
             </div>
           </div>
           <StarRating value={rating} onChange={setRating} disabled={loading} />
-          <button
-            className="fw-next-btn"
-            onClick={() => { if (rating > 0) setStep('comment'); else setError('Please select a rating.'); }}
-            type="button"
-            disabled={rating === 0}
-          >
-            Next →
+          <button className="fw-next-btn"
+            onClick={() => { if (rating > 0) setStep('comment'); else setError(t('feedback.rateError')); }}
+            type="button" disabled={rating === 0}>
+            {t('feedback.nextBtn')}
           </button>
           {error && <p className="fw-error">{error}</p>}
           <button className="fw-back-link" onClick={() => { setStep('ask'); setError(''); }} type="button">
-            ← Back
+            {t('feedback.backBtn')}
           </button>
         </>
       )}
@@ -163,33 +153,20 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
           <div className="fw-header">
             <span className="fw-emoji">🚨</span>
             <div>
-              <h3 className="fw-title">Issue will be escalated</h3>
-              <p className="fw-sub">This will automatically:</p>
+              <h3 className="fw-title">{t('feedback.escalateTitle')}</h3>
+              <p className="fw-sub">{t('feedback.escalateSub')}</p>
             </div>
           </div>
           <ul className="fw-escalate-list">
-            <li>
-              <span className="fw-escalate-dot fw-dot-reopen" />
-              Reopen your issue
-            </li>
-            <li>
-              <span className="fw-escalate-dot fw-dot-escalate" />
-              Escalate it to a supervisor
-            </li>
-            <li>
-              <span className="fw-escalate-dot fw-dot-notify" />
-              Alert all administrators immediately
-            </li>
+            <li><span className="fw-escalate-dot fw-dot-reopen" />{t('feedback.escalateAction1')}</li>
+            <li><span className="fw-escalate-dot fw-dot-escalate" />{t('feedback.escalateAction2')}</li>
+            <li><span className="fw-escalate-dot fw-dot-notify" />{t('feedback.escalateAction3')}</li>
           </ul>
-          <button
-            className="fw-next-btn fw-next-escalate"
-            onClick={() => setStep('comment')}
-            type="button"
-          >
-            Continue & Escalate
+          <button className="fw-next-btn fw-next-escalate" onClick={() => setStep('comment')} type="button">
+            {t('feedback.continueEscalate')}
           </button>
           <button className="fw-back-link" onClick={() => { setStep('ask'); setError(''); }} type="button">
-            ← Back
+            {t('feedback.backBtn')}
           </button>
         </>
       )}
@@ -200,52 +177,32 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
           <div className="fw-header">
             <span className="fw-emoji">💬</span>
             <div>
-              <h3 className="fw-title">What could we improve?</h3>
-              <p className="fw-sub">Optional — your feedback helps us serve better.</p>
+              <h3 className="fw-title">{t('feedback.commentTitle')}</h3>
+              <p className="fw-sub">{t('feedback.commentSub')}</p>
             </div>
           </div>
-          <textarea
-            className="fw-textarea"
-            placeholder="Share any details or suggestions…"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            maxLength={1000}
-            rows={3}
-            disabled={loading}
-            aria-label="Improvement comment"
-          />
-          <div className="fw-char-count">{comment.length}/1000</div>
-
+          <textarea className="fw-textarea"
+            placeholder={t('feedback.commentPlaceholder')}
+            value={comment} onChange={e => setComment(e.target.value)}
+            maxLength={1000} rows={3} disabled={loading}
+            aria-label={t('feedback.commentAria')} />
+          <div className="fw-char-count">{t('feedback.charCount', { n: comment.length })}</div>
           {error && <p className="fw-error">{error}</p>}
-
-          {/* Rating recap on the Yes path */}
           {wasResolved && rating > 0 && (
             <div className="fw-recap">
-              Your rating: {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+              {t('feedback.yourRating', { stars: '★'.repeat(rating) + '☆'.repeat(5 - rating) })}
             </div>
           )}
-
-          <button
-            className={`fw-submit-btn ${!wasResolved ? 'fw-submit-escalate' : ''}`}
-            onClick={handleSubmit}
-            disabled={loading}
-            type="button"
-          >
+          <button className={`fw-submit-btn ${!wasResolved ? 'fw-submit-escalate' : ''}`}
+            onClick={handleSubmit} disabled={loading} type="button">
             {loading ? (
-              <><span className="fw-spinner" /> Submitting…</>
-            ) : wasResolved ? (
-              'Submit Feedback'
-            ) : (
-              '🚨 Submit & Escalate Issue'
-            )}
+              <><span className="fw-spinner" /> {t('feedback.submitting')}</>
+            ) : wasResolved ? t('feedback.submitFeedback') : t('feedback.submitEscalate')}
           </button>
-          <button
-            className="fw-back-link"
+          <button className="fw-back-link"
             onClick={() => { setStep(wasResolved ? 'rate' : 'confirm-no'); setError(''); }}
-            type="button"
-            disabled={loading}
-          >
-            ← Back
+            type="button" disabled={loading}>
+            {t('feedback.backBtn')}
           </button>
         </>
       )}
@@ -255,22 +212,15 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
         wasResolved ? (
           <div className="fw-done fw-done-success">
             <div className="fw-done-icon">✅</div>
-            <h3>Thank you for your feedback!</h3>
-            <p>Your rating and comments help us improve civic services in your community.</p>
-            {rating > 0 && (
-              <div className="fw-done-stars">
-                {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
-              </div>
-            )}
+            <h3>{t('feedback.thankyouTitle')}</h3>
+            <p>{t('feedback.thankyouBody')}</p>
+            {rating > 0 && <div className="fw-done-stars">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</div>}
           </div>
         ) : (
           <div className="fw-done fw-done-escalated">
             <div className="fw-done-icon">🚨</div>
-            <h3>Issue Escalated</h3>
-            <p>
-              Your issue has been <strong>reopened</strong> and escalated to a supervisor.
-              Administrators have been notified and will follow up shortly.
-            </p>
+            <h3>{t('feedback.escalatedTitle')}</h3>
+            <p>{t('feedback.escalatedBody')}</p>
           </div>
         )
       )}
@@ -581,10 +531,9 @@ export default function FeedbackWidget({ issue, onFeedbackSubmitted }) {
 
 // ── Read-only summary shown after feedback is already submitted ───────────────
 function FeedbackSummary({ issue }) {
+  const { t } = useTranslation();
   const date = issue.feedbackAt
-    ? new Date(issue.feedbackAt).toLocaleDateString('en-IN', {
-        day: 'numeric', month: 'short', year: 'numeric',
-      })
+    ? new Date(issue.feedbackAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
 
   return (
@@ -592,47 +541,39 @@ function FeedbackSummary({ issue }) {
       <div className="fw-summary-header">
         <span style={{ fontSize: 18 }}>{issue.wasResolved ? '✅' : '🚨'}</span>
         <p className="fw-summary-title">
-          {issue.wasResolved ? 'Feedback Submitted' : 'Issue Escalated'}
+          {issue.wasResolved ? t('feedback.summaryTitleResolved') : t('feedback.summaryTitleEscalated')}
         </p>
       </div>
-
       <div className="fw-summary-row">
-        <span>Resolution confirmed</span>
-        <span className="fw-summary-val">{issue.wasResolved ? 'Yes' : 'No'}</span>
+        <span>{t('feedback.summaryResolution')}</span>
+        <span className="fw-summary-val">{issue.wasResolved ? t('feedback.summaryYes') : t('feedback.summaryNo')}</span>
       </div>
-
       {issue.wasResolved && issue.rating && (
         <div className="fw-summary-row">
-          <span>Your rating</span>
-          <span className="fw-summary-stars fw-summary-val">
-            {'★'.repeat(issue.rating)}{'☆'.repeat(5 - issue.rating)}
-          </span>
+          <span>{t('feedback.summaryRating')}</span>
+          <span className="fw-summary-stars fw-summary-val">{'★'.repeat(issue.rating)}{'☆'.repeat(5 - issue.rating)}</span>
         </div>
       )}
-
       {issue.feedbackComment && (
         <div className="fw-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <span>Your comment</span>
+          <span>{t('feedback.summaryComment')}</span>
           <span className="fw-summary-val" style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--text-secondary)' }}>
             "{issue.feedbackComment}"
           </span>
         </div>
       )}
-
       <div className="fw-summary-row">
-        <span>Submitted on</span>
+        <span>{t('feedback.summarySubmittedOn')}</span>
         <span className="fw-summary-val">{date}</span>
       </div>
-
       {issue.isEscalated && (
         <div style={{ marginTop: 10 }}>
-          <span className="fw-escalated-badge">🚨 Escalated to Supervisor</span>
+          <span className="fw-escalated-badge">{t('feedback.escalatedBadge')}</span>
         </div>
       )}
-
       {issue.supervisorNote && (
         <div className="fw-summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginTop: 6 }}>
-          <span>Supervisor note</span>
+          <span>{t('feedback.summarySupervisorNote')}</span>
           <span className="fw-summary-val" style={{ fontWeight: 400, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
             "{issue.supervisorNote}"
           </span>
