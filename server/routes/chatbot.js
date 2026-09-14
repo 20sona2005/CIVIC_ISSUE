@@ -255,7 +255,7 @@ async function callGemini(userMessage, role, dbContext, recentHistory, lang) {
   const genAI = getGemini();
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-flash-latest',
+    model: 'gemini-1.5-flash',
     generationConfig: {
       maxOutputTokens: 250,
       temperature: 0.4,
@@ -461,31 +461,47 @@ router.post('/assist-description', verifyToken, async (req, res) => {
     const isTamil = lang === 'ta';
 
     const prompt = isTamil
-      ? `நீங்கள் ஒரு குடிமை புகார் துணை எழுத்தாளர். கீழே உள்ள விவரணையை மேம்படுத்துங்கள்:
-- இலக்கணம் மற்றும் தெளிவு சரிசெய்யவும்
-- அரசு அதிகாரிகளுக்கு ஏற்ற தகவல் தொடர்பு தொனியில் மாற்றவும்
-- பயனர் கூறிய உண்மைகள், இடம், பிரச்னை, தாக்கம் ஆகியவற்றை அப்படியே வைக்கவும்
-- புதிய தகவல்களை கற்பனையாக சேர்க்காதீர்கள்
-- பதில் தமிழிலேயே இருக்க வேண்டும்
-- வெறும் மேம்படுத்தப்பட்ட விவரணையை மட்டும் திருப்பி அனுப்புங்கள், வேறு எந்த விளக்கமும் வேண்டாம்
+      ? `நீங்கள் ஒரு குடிமை புகார் எழுத்தாளர். கீழே உள்ள உள்ளீடு ஆங்கிலம், தமிழ் அல்லது Tanglish-ல் இருக்கலாம் — எந்த மொழியிலும் இருந்தாலும் பரவாயில்லை.
 
-விவரணை:
+உங்கள் பணி:
+- உள்ளீடு குறுகியதாகவோ தெளிவற்றதாகவோ இருந்தால், அதை ஒரு முழுமையான, தெளிவான குடிமை புகார் விவரணையாக விரிவுபடுத்துங்கள்
+- உள்ளீடு ஏற்கனவே விரிவாக இருந்தால், இலக்கணம் மற்றும் தெளிவை மட்டும் சரிசெய்யுங்கள்
+- அரசு அதிகாரிகளுக்கு ஏற்ற தொனியில் எழுதுங்கள்
+- பயனர் குறிப்பிட்ட இடம், பிரச்னை வகை, தாக்கம் ஆகியவற்றை அப்படியே வைக்கவும்
+- இடம், தேதி, நபர், அளவு போன்ற புதிய தகவல்களை கற்பனையாக சேர்க்காதீர்கள்
+- **பதில் தமிழிலேயே இருக்க வேண்டும்** — உள்ளீடு ஆங்கிலத்தில் இருந்தாலும் சரி
+- வெறும் மேம்படுத்தப்பட்ட விவரணையை மட்டும் திருப்பி அனுப்புங்கள்
+
+எடுத்துக்காட்டுகள்:
+உள்ளீடு: "water problem" → வெளியீடு: "தண்ணீர் கசிவு ஏற்பட்டு தண்ணீர் வீணாகி, சுற்றியுள்ள பகுதிக்கு பாதிப்பு ஏற்படுகிறது."
+உள்ளீடு: "road problem" → வெளியீடு: "சாலையில் சேதம் மற்றும் பள்ளங்கள் ஏற்பட்டு, வாகன ஓட்டிகள் மற்றும் பாதசாரிகளுக்கு சிரமம் ஏற்படுகிறது."
+உள்ளீடு: "குப்பை பிரச்னை" → வெளியீடு: "அப்பகுதியில் குப்பைகள் தேங்கி, முறையான குப்பை சேகரிப்பு இல்லாததால் சுகாதார பாதிப்பு ஏற்படுகிறது."
+
+உள்ளீடு:
 "${description.trim()}"`
-      : `You are a civic complaint writing assistant. Improve the following issue description:
-- Fix grammar, spelling, and punctuation
-- Improve clarity and readability
-- Use a formal tone suitable for a civic authority complaint
-- Preserve ALL facts the user mentioned: location, problem type, impact
-- Do NOT invent new facts
-- Keep the same language (English)
-- Return ONLY the improved description text, no explanations or labels
+      : `You are a civic complaint writing assistant. The input may be in English, Tamil, or Tanglish — always respond in English regardless.
 
-Description:
+Your task:
+- If the input is short or vague, EXPAND it into a clear, complete civic complaint description
+- If the input is already detailed, improve grammar, clarity, and tone only
+- Use formal language suitable for a civic authority complaint
+- Preserve any facts the user mentioned: location, problem type, impact
+- Do NOT invent new facts such as exact location, date, person, measurement, or cause
+- Output language MUST be English regardless of input language
+- Return ONLY the improved description text, no labels or explanations
+
+Examples:
+Input: "water problem" → Output: "Water leakage is occurring in the area, causing water wastage and affecting the surrounding locality."
+Input: "road problem" → Output: "The road is in poor condition with potholes and surface damage, causing difficulty for vehicles and pedestrians."
+Input: "garbage problem" → Output: "Garbage is accumulating in the area due to irregular waste collection, creating an unhygienic environment."
+Input: "தண்ணீர் பிரச்னை" → Output: "Water leakage is occurring in the area, causing water wastage and affecting the surrounding locality."
+
+Input:
 "${description.trim()}"`;
 
     const genAI = getGemini();
     const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         maxOutputTokens: 300,
         temperature: 0.3,
@@ -527,35 +543,55 @@ router.post('/enhance-search', verifyToken, async (req, res) => {
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return res.status(400).json({ message: 'Query is required.' });
     }
-    if (query.trim().length > 300) {
-      return res.status(400).json({ message: 'Query too long.' });
+    if (query.trim().length > 1000) {
+      return res.status(400).json({ message: 'Input too long.' });
     }
 
     const isTamil = lang === 'ta';
 
     const prompt = isTamil
-      ? `நீங்கள் ஒரு குடிமை பிரச்னை தேடல் உதவியாளர். பயனர் தேடல் வினவலை மேம்படுத்துங்கள்:
-- எழுத்து பிழைகளை சரிசெய்யவும்
-- தெளிவாகவும் இயல்பான தமிழிலும் மாற்றவும்
-- பயனரின் நோக்கத்தை பாதுகாக்கவும்
-- புதிய தகவல்களை சேர்க்காதீர்கள்
-- பதில் தமிழிலேயே இருக்க வேண்டும்
-- வெறும் மேம்படுத்தப்பட்ட வினவலை மட்டும் திருப்பி அனுப்புங்கள்
+      ? `நீங்கள் ஒரு குடிமை புகார் எழுத்தாளர். கீழே உள்ள உள்ளீடு ஆங்கிலம், தமிழ் அல்லது Tanglish-ல் இருக்கலாம் — எந்த மொழியிலும் இருந்தாலும் பரவாயில்லை.
 
-வினவல்: "${query.trim()}"`
-      : `You are a civic issue search assistant. Improve the following search query:
-- Fix spelling and grammar
-- Clarify the user's intent
-- Keep the original meaning — do NOT add new details
-- Return ONLY the improved query, no labels or explanations
-- Keep it concise (under 15 words)
+உங்கள் பணி:
+- உள்ளீடு குறுகியதாகவோ தெளிவற்றதாகவோ இருந்தால், அதை ஒரு முழுமையான, தெளிவான குடிமை புகார் விவரணையாக விரிவுபடுத்துங்கள்
+- உள்ளீடு ஏற்கனவே விரிவாக இருந்தால், இலக்கணம் மற்றும் தெளிவை மட்டும் சரிசெய்யுங்கள்
+- அரசு அதிகாரிகளுக்கு ஏற்ற தொனியில் எழுதுங்கள்
+- பயனர் குறிப்பிட்ட இடம், பிரச்னை வகை, தாக்கம் ஆகியவற்றை அப்படியே வைக்கவும்
+- இடம், தேதி, நபர், அளவு போன்ற புதிய தகவல்களை கற்பனையாக சேர்க்காதீர்கள்
+- **பதில் தமிழிலேயே இருக்க வேண்டும்** — உள்ளீடு ஆங்கிலத்தில் இருந்தாலும் சரி
+- வெறும் மேம்படுத்தப்பட்ட விவரணையை மட்டும் திருப்பி அனுப்புங்கள்
 
-Query: "${query.trim()}"`;
+எடுத்துக்காட்டுகள்:
+உள்ளீடு: "water problem" → வெளியீடு: "தண்ணீர் கசிவு ஏற்பட்டு தண்ணீர் வீணாகி, சுற்றியுள்ள பகுதிக்கு பாதிப்பு ஏற்படுகிறது."
+உள்ளீடு: "road problem" → வெளியீடு: "சாலையில் சேதம் மற்றும் பள்ளங்கள் ஏற்பட்டு, வாகன ஓட்டிகள் மற்றும் பாதசாரிகளுக்கு சிரமம் ஏற்படுகிறது."
+உள்ளீடு: "குப்பை பிரச்னை" → வெளியீடு: "அப்பகுதியில் குப்பைகள் தேங்கி, முறையான குப்பை சேகரிப்பு இல்லாததால் சுகாதார பாதிப்பு ஏற்படுகிறது."
+
+உள்ளீடு:
+"${query.trim()}"`
+      : `You are a civic complaint writing assistant. The input may be in English, Tamil, or Tanglish — always respond in English.
+
+Your task:
+- If the input is short or vague, EXPAND it into a clear, complete civic complaint description
+- If the input is already detailed, improve grammar, clarity, and tone only
+- Use formal language suitable for a civic authority complaint
+- Preserve any facts the user mentioned: location, problem type, impact
+- Do NOT invent new facts such as exact location, date, person, measurement, or cause
+- Output language MUST be English regardless of input language
+- Return ONLY the improved description text, no labels or explanations
+
+Examples:
+Input: "water problem" → Output: "Water leakage is occurring in the area, causing water wastage and affecting the surrounding locality."
+Input: "road problem" → Output: "The road is in poor condition with potholes and surface damage, causing difficulty for vehicles and pedestrians."
+Input: "garbage problem" → Output: "Garbage is accumulating in the area due to irregular waste collection, creating an unhygienic environment."
+Input: "தண்ணீர் பிரச்னை" → Output: "Water leakage is occurring in the area, causing water wastage and affecting the surrounding locality."
+
+Input:
+"${query.trim()}"`;
 
     const genAI = getGemini();
     const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      generationConfig: { maxOutputTokens: 80, temperature: 0.2 },
+      model: 'gemini-1.5-flash',
+      generationConfig: { maxOutputTokens: 300, temperature: 0.3 },
     });
 
     const result  = await model.generateContent(prompt);

@@ -455,7 +455,7 @@ export default function ReportIssue() {
                   {geoError && <span className="form-error">{geoError}</span>}
                 </div>
 
-                {/* Description + Voice + AI Assist */}
+                {/* Description + Voice */}
                 <div className="form-group">
                   <label className="form-label" htmlFor="description">
                     {t('report.descriptionField')} <span className="req">*</span>

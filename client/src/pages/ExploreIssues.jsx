@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
@@ -18,37 +18,81 @@ export default function ExploreIssues() {
   const [searchParams]          = useSearchParams();
   const navigate                = useNavigate();
 
-  /* ── AI Enhance state ── */
-  const [aiLoading, setAiLoading]         = useState(false);
-  const [aiSuggestion, setAiSuggestion]   = useState('');
-  const [aiError, setAiError]             = useState('');
+  /* ── Voice search state ── */
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceError, setVoiceError]         = useState('');
+  const recognitionRef  = useRef(null);
+  const isListeningRef  = useRef(false);
 
-  const handleEnhance = async () => {
-    const q = search.trim();
-    if (!q) { setAiError(t('explore.aiEmptyError')); return; }
-    setAiError('');
-    setAiSuggestion('');
-    setAiLoading(true);
-    try {
-      const lang = i18n.language?.startsWith('ta') ? 'ta' : 'en';
-      const { data } = await api.post('/chatbot/enhance-search', { query: q, lang });
-      setAiSuggestion(data.enhanced);
-    } catch (err) {
-      setAiError(err.response?.data?.message || t('explore.aiError'));
-    } finally {
-      setAiLoading(false);
+  const getRecognitionLang = () =>
+    i18n.language?.startsWith('ta') ? 'ta-IN' : 'en-IN';
+
+  /* Cleanup on unmount */
+  useEffect(() => {
+    return () => {
+      isListeningRef.current = false;
+      try { recognitionRef.current?.abort(); } catch (_) {}
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const toggleVoice = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    if (!SR) { setVoiceError(t('explore.voiceNotSupported')); return; }
+
+    if (isListeningRef.current) {
+      /* ── STOP ── */
+      isListeningRef.current = false;
+      setVoiceListening(false);
+      try { recognitionRef.current?.abort(); } catch (_) {}
+      recognitionRef.current = null;
+      return;
     }
-  };
 
-  const handleUseEnhanced = () => {
-    setSearch(aiSuggestion);
-    setAiSuggestion('');
-    setAiError('');
-  };
+    /* ── START ── */
+    setVoiceError('');
+    isListeningRef.current = true;
+    setVoiceListening(true);
 
-  const handleKeepOriginal = () => {
-    setAiSuggestion('');
-    setAiError('');
+    const recognition        = new SR();
+    recognition.lang         = getRecognitionLang();
+    recognition.continuous   = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      if (transcript) setSearch(transcript);
+      isListeningRef.current = false;
+      setVoiceListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onerror = (event) => {
+      if (!isListeningRef.current) return;
+      isListeningRef.current = false;
+      setVoiceListening(false);
+      recognitionRef.current = null;
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      setVoiceError(t('explore.voiceError'));
+    };
+
+    recognition.onend = () => {
+      if (isListeningRef.current) {
+        isListeningRef.current = false;
+        setVoiceListening(false);
+        recognitionRef.current = null;
+      }
+    };
+
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (_) {
+      isListeningRef.current = false;
+      setVoiceListening(false);
+      setVoiceError(t('explore.voiceError'));
+    }
   };
 
   /* ── Data fetching ── */
@@ -71,7 +115,7 @@ export default function ExploreIssues() {
     fetchIssues();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Filtering (unchanged) ── */
+  /* ── Filtering ── */
   const filtered = issues.filter((issue) => {
     const matchCat    = category === 'All' || issue.category === category;
     const matchStatus = status   === 'All' || issue.status   === status;
@@ -84,13 +128,7 @@ export default function ExploreIssues() {
     return matchCat && matchStatus && matchSearch;
   });
 
-  const clearFilters = () => {
-    setSearch('');
-    setCategory('All');
-    setStatus('All');
-    setAiSuggestion('');
-    setAiError('');
-  };
+  const clearFilters = () => { setSearch(''); setCategory('All'); setStatus('All'); };
   const hasFilter = search || category !== 'All' || status !== 'All';
 
   const categoryLabel = (c) => c === 'All' ? t('explore.allCategories') : t(`category.${c === 'Water Leakage' ? 'WaterLeakage' : c}`, c);
@@ -105,7 +143,6 @@ export default function ExploreIssues() {
 
       {/* ── Filters Bar ── */}
       <div className="explore-filters">
-        {/* Search input */}
         <div className="search-wrap">
           <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -115,25 +152,45 @@ export default function ExploreIssues() {
             type="text" className="form-input search-input"
             placeholder={t('explore.searchPlaceholder')}
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setAiSuggestion(''); setAiError(''); }}
+            onChange={(e) => { setSearch(e.target.value); setVoiceError(''); }}
             aria-label={t('explore.searchAria')}
           />
+          <button
+            type="button"
+            className={`voice-search-btn${voiceListening ? ' voice-search-btn--listening' : ''}`}
+            onClick={toggleVoice}
+            title={voiceListening ? t('explore.voiceStop') : t('explore.voiceStart')}
+            aria-label={voiceListening ? t('explore.voiceStop') : t('explore.voiceStart')}
+            aria-pressed={voiceListening}
+          >
+            {voiceListening ? (
+              /* Stop icon */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+            ) : (
+              /* Mic icon */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            )}
+          </button>
         </div>
-
-        {/* ✨ Enhance with AI button */}
-        <button
-          type="button"
-          className="btn explore-ai-btn"
-          onClick={handleEnhance}
-          disabled={aiLoading}
-          title={t('explore.aiEnhance')}
-        >
-          {aiLoading ? (
-            <><span className="explore-ai-spinner" />{t('explore.aiEnhancing')}</>
-          ) : (
-            <>{t('explore.aiEnhance')}</>
-          )}
-        </button>
+        {voiceListening && (
+          <span className="voice-search-label">
+            <span className="voice-search-pulse" />
+            {t('explore.voiceListening')}
+          </span>
+        )}
+        {voiceError && (
+          <span className="form-error" style={{ fontSize: 12, alignSelf: 'center' }}>
+            {voiceError}
+          </span>
+        )}
 
         <select className="form-select filter-select" value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -157,41 +214,6 @@ export default function ExploreIssues() {
           </button>
         )}
       </div>
-
-      {/* ── AI error (empty input) ── */}
-      {aiError && !aiSuggestion && (
-        <p className="explore-ai-error">{aiError}</p>
-      )}
-
-      {/* ── AI suggestion panel ── */}
-      {aiSuggestion && (
-        <div className="explore-ai-panel">
-          <div className="explore-ai-panel-header">
-            <span className="explore-ai-panel-label">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-              {t('explore.aiLabel')}
-            </span>
-          </div>
-          <input
-            type="text"
-            className="form-input explore-ai-input"
-            value={aiSuggestion}
-            onChange={(e) => setAiSuggestion(e.target.value)}
-            aria-label={t('explore.aiLabel')}
-          />
-          <div className="explore-ai-actions">
-            <button className="btn btn-primary btn-sm" onClick={handleUseEnhanced}>
-              {t('explore.aiUse')}
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleKeepOriginal}>
-              {t('explore.aiKeep')}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Results summary ── */}
       {!loading && !error && (
@@ -243,72 +265,31 @@ export default function ExploreIssues() {
       </div>
 
       <style>{`
-        /* ── Filters bar ── */
-        .explore-filters { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-2); flex-wrap: wrap; }
-        .search-wrap { position: relative; flex: 1; min-width: 200px; }
+        .explore-filters { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+        .search-wrap { position: relative; flex: 1; min-width: 200px; display: flex; align-items: center; }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-        .search-input { padding-left: 36px; }
+        .search-input { padding-left: 36px; padding-right: 38px; }
+        .voice-search-btn {
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          width: 26px; height: 26px; border-radius: 50%; border: none;
+          background: transparent; color: var(--text-muted);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: color 0.15s, background 0.15s; flex-shrink: 0;
+        }
+        .voice-search-btn:hover { color: var(--primary); background: var(--primary-light, #eff6ff); }
+        .voice-search-btn--listening { color: #dc2626; background: #fee2e2; animation: voicePulseBtn 1.2s ease-in-out infinite; }
+        @keyframes voicePulseBtn { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); } 50% { box-shadow: 0 0 0 5px rgba(220,38,38,0); } }
+        .voice-search-label {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; color: #dc2626; font-weight: 500;
+          align-self: center;
+        }
+        .voice-search-pulse {
+          width: 8px; height: 8px; border-radius: 50%; background: #dc2626; flex-shrink: 0;
+          animation: voiceDot 1s ease-in-out infinite;
+        }
+        @keyframes voiceDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
         .filter-select { width: auto; min-width: 150px; flex-shrink: 0; }
-
-        /* ── AI Enhance button ── */
-        .explore-ai-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 0 14px; height: 38px;
-          background: linear-gradient(135deg, #7c3aed, #a855f7);
-          color: #fff; border: none; border-radius: var(--radius-sm);
-          font-size: 13px; font-weight: 600; font-family: var(--font);
-          cursor: pointer; white-space: nowrap; flex-shrink: 0;
-          transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
-          box-shadow: 0 2px 8px rgba(124,58,237,0.28);
-        }
-        .explore-ai-btn:hover:not(:disabled) {
-          opacity: 0.90; transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(124,58,237,0.38);
-        }
-        .explore-ai-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .explore-ai-spinner {
-          width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
-          border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
-          animation: spin 0.7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── AI error ── */
-        .explore-ai-error {
-          font-size: 12px; color: var(--danger); font-weight: 500;
-          margin: 0 0 var(--sp-3); padding: 0;
-        }
-
-        /* ── AI suggestion panel ── */
-        .explore-ai-panel {
-          border: 1.5px solid #a855f7; border-radius: var(--radius);
-          background: #faf5ff; margin-bottom: var(--sp-4); overflow: hidden;
-          animation: aiFadeIn 0.2s ease;
-        }
-        @keyframes aiFadeIn {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .explore-ai-panel-header {
-          display: flex; align-items: center; padding: 7px 12px;
-          background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff;
-        }
-        .explore-ai-panel-label {
-          display: flex; align-items: center; gap: 5px;
-          font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-        }
-        .explore-ai-input {
-          border: none !important; border-radius: 0 !important;
-          background: #faf5ff !important; box-shadow: none !important;
-          font-size: 14px; font-weight: 500;
-        }
-        .explore-ai-input:focus { background: #f3e8ff !important; box-shadow: none !important; }
-        .explore-ai-actions {
-          display: flex; gap: var(--sp-2); padding: 8px 12px;
-          border-top: 1px solid #e9d5ff; background: #f5f0ff;
-        }
-
-        /* ── Rest (unchanged) ── */
         .explore-summary { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-5); font-size: 13px; color: var(--text-secondary); }
         .empty-icon { font-size: 40px; margin-bottom: var(--sp-3); }
         .cat-pills { display: none; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-4) 0 var(--sp-8); }
@@ -320,11 +301,10 @@ export default function ExploreIssues() {
         }
         .cat-pill:hover { border-color: var(--primary); color: var(--primary); }
         .cat-pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-        @media (max-width: 700px) {
+        @media (max-width: 600px) {
           .explore-filters { gap: var(--sp-2); }
-          .filter-select { min-width: 120px; }
-          .explore-ai-btn { font-size: 12px; padding: 0 10px; }
-          .cat-pills { display: flex; }
+          .filter-select   { min-width: 120px; }
+          .cat-pills       { display: flex; }
         }
       `}</style>
     </div>

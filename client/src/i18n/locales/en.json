@@ -227,13 +227,11 @@
     "clearFiltersCta": "Clear Filters",
     "reportIssueCta": "Report an Issue",
     "errorLoad": "Failed to load issues. Please try again.",
-    "aiEnhance": "✨ Enhance with AI",
-    "aiEnhancing": "Enhancing...",
-    "aiLabel": "AI Suggestion",
-    "aiUse": "✅ Use Enhanced Query",
-    "aiKeep": "Keep Original",
-    "aiEmptyError": "Please enter a search query first.",
-    "aiError": "AI enhancement failed. Please try again."
+    "voiceStart": "Search by voice",
+    "voiceStop": "Stop voice input",
+    "voiceListening": "Listening…",
+    "voiceNotSupported": "Voice search is not supported in this browser.",
+    "voiceError": "Voice input error. Please try again."
   },
   "report": {
     "title": "Report a Civic Issue",
@@ -444,13 +442,13 @@
     "genericError": "Voice recognition error. Please try again."
   },
   "assist": {
-    "btn": "✨ Assist with AI",
-    "btnLoading": "Assisting...",
-    "emptyError": "Please type or speak a description first before using AI assist.",
-    "useBtn": "✅ Use AI Suggestion",
-    "keepBtn": "Keep Original",
+    "btn": "✨ Enhance with AI",
+    "btnLoading": "Enhancing...",
+    "emptyError": "Please type or speak a description first.",
     "label": "AI Suggestion",
-    "errorGeneric": "AI assist failed. Please try again.",
+    "useBtn": "✅ Use Enhanced Description",
+    "keepBtn": "Keep Original",
+    "errorGeneric": "AI enhancement failed. Please try again.",
     "errorBusy": "AI service is busy. Please try again shortly.",
     "errorNotConfigured": "AI service is not available."
   },

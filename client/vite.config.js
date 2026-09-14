@@ -19,6 +19,13 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         ws: true,           // enable WebSocket proxying
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            // Suppress noisy ECONNABORTED/ECONNRESET errors from browser tab closes
+            if (err.code === 'ECONNABORTED' || err.code === 'ECONNRESET') return;
+            console.error('[socket.io proxy error]', err.message);
+          });
+        },
       },
     },
   },
