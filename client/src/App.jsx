@@ -12,6 +12,8 @@ import AdminLogin         from './pages/AdminLogin';
 import NotificationsPage  from './pages/NotificationsPage';
 import Navbar             from './components/Navbar';
 import Chatbot            from './components/Chatbot';
+import AadhaarLogin       from './pages/AadhaarLogin';
+import AadhaarOtp         from './pages/AadhaarOtp';
 
 // Protect routes that require login
 function PrivateRoute({ children }) {
@@ -39,6 +41,10 @@ export default function App() {
           {/* Public */}
           <Route path="/login"       element={<LoginRegister />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* ── Demo Aadhaar Verification (College Project) ── */}
+          <Route path="/aadhaar"     element={<AadhaarLogin />} />
+          <Route path="/aadhaar/otp" element={<AadhaarOtp />} />
 
           {/* Protected — citizens */}
           <Route path="/"              element={<PrivateRoute><Dashboard /></PrivateRoute>} />

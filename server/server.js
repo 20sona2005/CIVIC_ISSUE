@@ -92,6 +92,16 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chatbot',       chatbotLimiter, require('./routes/chatbot'));
 app.use('/api/feedback',      require('./routes/feedback'));
 
+// ── Demo Aadhaar verification (college project — NOT real UIDAI) ─────────────
+const aadhaarLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15-minute window
+  max: 20,                    // generous limit for demo purposes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please wait 15 minutes.' },
+});
+app.use('/api/aadhaar', aadhaarLimiter, require('./routes/aadhaarAuth'));
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'Civic Issue API is running' });

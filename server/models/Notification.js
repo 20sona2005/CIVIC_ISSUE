@@ -86,6 +86,15 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // ── Supervisor note (set when admin adds a note to an escalated issue) ──
+    // Stored here so the citizen's notification card can display it directly
+    // without needing a separate API call to the issue.
+    supervisorNote: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );

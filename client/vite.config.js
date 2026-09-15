@@ -9,6 +9,12 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            if (err.code === 'ECONNABORTED' || err.code === 'ECONNRESET') return;
+            console.error('[/api proxy error]', err.message);
+          });
+        },
       },
       '/uploads': {
         target: 'http://localhost:5000',

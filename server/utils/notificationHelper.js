@@ -252,4 +252,49 @@ async function notifyEscalation(io, issue, citizenName) {
   }
 }
 
-module.exports = { notifyAdmins, notifyIssueReporter, notifyEscalation };
+// ── PUBLIC: notify citizen that a supervisor added a note to their issue ──────
+/**
+ * Called after admin saves a supervisor note on an escalated issue.
+ * Sends a real-time + persisted notification to the citizen who reported it.
+ *
+ * @param {object} io          — Socket.IO server instance
+ * @param {object} issue       — Mongoose Issue document (after note save)
+ * @param {string} note        — the supervisor note text
+ * @param {string} adminName   — display name of the admin who wrote the note
+ */
+async function notifySupervisorNote(io, issue, note, adminName) {
+  try {
+    const citizen = await findCitizenForIssue(issue);
+    if (!citizen) {
+      console.warn(`[notifySupervisorNote] No citizen found for issue "${issue.title}"`);
+      return;
+    }
+
+    const date = new Date().toLocaleString('en-IN', {
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+
+    await saveAndEmit(io, {
+      recipientId:   citizen._id,
+      recipientName: citizen.name,
+      recipientRole: 'citizen',
+      type:          'STATUS_UPDATE',
+      title:         '📋 Supervisor Note Added to Your Issue',
+      message:
+        `A supervisor has reviewed your escalated issue and added a note.\n\n` +
+        `Issue: ${issue.title}\n` +
+        `Updated On: ${date}`,
+      issueId:       issue._id,
+      issueTitle:    issue.title,
+      issueCategory: issue.category,
+      issueLocation: issue.location,
+      triggeredBy:   adminName || 'Supervisor',
+      supervisorNote: note,
+    });
+  } catch (err) {
+    console.error('[notifySupervisorNote] error:', err.message);
+  }
+}
+
+module.exports = { notifyAdmins, notifyIssueReporter, notifyEscalation, notifySupervisorNote };

@@ -156,27 +156,29 @@ export default function AdminDashboard() {
             </span>
           </div>
           <div className="fb-metric-grid">
-            <FbMetricCard icon="⭐" label={t('adminDash.avgRating')}
+            <FbMetricCard
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+              label={t('adminDash.avgRating')}
               value={feedbackStats.avgRating !== null ? t('adminDash.avgRatingValue', { n: feedbackStats.avgRating }) : '—'}
-              sub={feedbackStats.ratedCount
-                ? t('adminDash.fromRatings', { count: feedbackStats.ratedCount })
-                : t('adminDash.noRatingsYet')}
-              color="yellow"
+              sub={feedbackStats.ratedCount ? t('adminDash.fromRatings', { count: feedbackStats.ratedCount }) : t('adminDash.noRatingsYet')}
             />
-            <FbMetricCard icon="😊" label={t('adminDash.satisfactionRate')}
+            <FbMetricCard
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>}
+              label={t('adminDash.satisfactionRate')}
               value={feedbackStats.satisfactionRate !== null ? `${feedbackStats.satisfactionRate}%` : '—'}
               sub={t('adminDash.satisfactionRateSub', { satisfied: feedbackStats.satisfiedCount, total: feedbackStats.feedbackCount })}
-              color="green"
             />
-            <FbMetricCard icon="📬" label={t('adminDash.feedbackRate')}
+            <FbMetricCard
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
+              label={t('adminDash.feedbackRate')}
               value={feedbackStats.feedbackRate !== null ? `${feedbackStats.feedbackRate}%` : '—'}
               sub={t('adminDash.feedbackRateSub', { count: feedbackStats.feedbackCount, total: feedbackStats.totalResolved })}
-              color="blue"
             />
-            <FbMetricCard icon="🚨" label={t('adminDash.escalations')}
+            <FbMetricCard
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+              label={t('adminDash.escalations')}
               value={feedbackStats.escalatedCount}
               sub={t('adminDash.escalationsSub')}
-              color={feedbackStats.escalatedCount > 0 ? 'red' : 'green'}
             />
           </div>
 
@@ -191,7 +193,7 @@ export default function AdminDashboard() {
                     <div key={star} className="fb-dist-row">
                       <span className="fb-dist-label">{star} ★</span>
                       <div className="fb-dist-track">
-                        <div className="fb-dist-fill" style={{ width: `${pct}%`, background: star >= 4 ? 'var(--success)' : star === 3 ? '#f59e0b' : 'var(--danger)' }} />
+                        <div className="fb-dist-fill" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="fb-dist-count">{count}</span>
                     </div>
@@ -447,24 +449,68 @@ export default function AdminDashboard() {
         .admin-fb-stars { font-size: 13px; color: #f59e0b; letter-spacing: 1px; white-space: nowrap; }
         .admin-fb-comment { font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
         .fb-metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); margin-bottom: var(--sp-5); }
-        .fb-metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-5); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: var(--sp-2); border-left: 4px solid transparent; transition: box-shadow var(--transition), transform var(--transition); }
-        .fb-metric-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
-        .fb-metric-icon { font-size: 22px; line-height: 1; }
-        .fb-metric-value { font-size: 28px; font-weight: 700; line-height: 1; color: var(--text-primary); }
-        .fb-metric-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-        .fb-metric-sub { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-        .fb-metric-yellow { border-left-color: #f59e0b; } .fb-metric-yellow .fb-metric-value { color: #f59e0b; }
-        .fb-metric-green  { border-left-color: var(--success); } .fb-metric-green .fb-metric-value { color: var(--success); }
-        .fb-metric-blue   { border-left-color: var(--primary); } .fb-metric-blue .fb-metric-value { color: var(--primary); }
-        .fb-metric-red    { border-left-color: var(--danger); }  .fb-metric-red .fb-metric-value { color: var(--danger); }
-        .fb-dist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-5); box-shadow: var(--shadow-sm); }
-        .fb-dist-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-4); }
-        .fb-dist-bars { display: flex; flex-direction: column; gap: 8px; }
-        .fb-dist-row { display: grid; grid-template-columns: 32px 1fr 28px; align-items: center; gap: var(--sp-3); }
-        .fb-dist-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
-        .fb-dist-track { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
-        .fb-dist-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; min-width: 2px; }
-        .fb-dist-count { font-size: 12px; color: var(--text-muted); text-align: right; }
+        .fb-metric-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: var(--radius);
+          padding: var(--sp-5);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          transition: box-shadow 0.18s, transform 0.18s;
+        }
+        .fb-metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.09); transform: translateY(-2px); }
+        .fb-metric-icon {
+          width: 34px; height: 34px;
+          border-radius: 8px;
+          background: #f3f4f6;
+          display: flex; align-items: center; justify-content: center;
+          color: #374151;
+          margin-bottom: 4px;
+          flex-shrink: 0;
+        }
+        .fb-metric-value {
+          font-size: 28px;
+          font-weight: 800;
+          line-height: 1;
+          color: #111827;
+          letter-spacing: -0.5px;
+        }
+        .fb-metric-label {
+          font-size: 11px;
+          font-weight: 700;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .fb-metric-sub { font-size: 12px; color: #9ca3af; line-height: 1.4; margin-top: 2px; }
+
+        .fb-dist-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: var(--radius);
+          padding: var(--sp-5) var(--sp-6);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .fb-dist-title { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: var(--sp-4); }
+        .fb-dist-bars { display: flex; flex-direction: column; gap: 10px; }
+        .fb-dist-row { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; gap: var(--sp-3); }
+        .fb-dist-label { font-size: 12px; color: #6b7280; font-weight: 500; }
+        .fb-dist-track {
+          height: 7px;
+          background: #f3f4f6;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .fb-dist-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: #2563eb;
+          transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+          min-width: 3px;
+        }
+        .fb-dist-count { font-size: 12px; color: #9ca3af; text-align: right; font-weight: 500; }
         .fb-escalated-badge { font-size: 11px; font-weight: 700; background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; border-radius: 999px; padding: 2px 9px; }
         .fb-escalated-list { display: flex; flex-direction: column; gap: var(--sp-3); }
         .fb-escalated-row { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-4); align-items: start; padding: var(--sp-4) var(--sp-5); border-left: 4px solid var(--danger); transition: box-shadow var(--transition); }
@@ -516,10 +562,10 @@ function StatCard({ label, value, color }) {
   );
 }
 
-function FbMetricCard({ icon, label, value, sub, color }) {
+function FbMetricCard({ icon, label, value, sub }) {
   return (
-    <div className={`fb-metric-card fb-metric-${color}`}>
-      <span className="fb-metric-icon">{icon}</span>
+    <div className="fb-metric-card">
+      <div className="fb-metric-icon">{icon}</div>
       <div className="fb-metric-value">{value}</div>
       <div className="fb-metric-label">{label}</div>
       {sub && <div className="fb-metric-sub">{sub}</div>}

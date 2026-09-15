@@ -17,7 +17,7 @@ const express         = require('express');
 const router          = express.Router();
 const { verifyToken, requireAdmin } = require('../middleware/auth');
 const Issue           = require('../models/Issue');
-const { notifyEscalation } = require('../utils/notificationHelper');
+const { notifyEscalation, notifySupervisorNote } = require('../utils/notificationHelper');
 
 // ── POST /api/feedback/submit ─────────────────────────────────────────────────
 router.post('/submit', verifyToken, async (req, res) => {
@@ -212,9 +212,14 @@ router.patch('/:id/supervisor-note', verifyToken, requireAdmin, async (req, res)
       req.params.id,
       { supervisorNote: note.trim().slice(0, 2000) },
       { new: true }
-    ).select('title supervisorNote escalatedAt status');
+    ).select('title category location supervisorNote escalatedAt status reportedBy reportedById');
 
     if (!issue) return res.status(404).json({ message: 'Issue not found.' });
+
+    // Notify the citizen who reported the issue (non-blocking)
+    const io       = req.app.get('io');
+    const adminName = req.user?.name || 'Supervisor';
+    notifySupervisorNote(io, issue, note.trim(), adminName);
 
     res.json({ message: 'Supervisor note saved.', issue });
   } catch (err) {

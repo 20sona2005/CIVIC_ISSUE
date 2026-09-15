@@ -75,6 +75,22 @@ function NotifCard({ notif, onRead, onNavigate, t }) {
           </p>
         )}
         <p className="notif-card__message">{notif.message}</p>
+        {notif.supervisorNote && (
+          <div className="notif-card__supervisor-note">
+            <span className="notif-card__supervisor-note-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Supervisor Note
+            </span>
+            <p className="notif-card__supervisor-note-text">{notif.supervisorNote}</p>
+          </div>
+        )}
         <div className="notif-card__meta">
           {notif.triggeredBy && (
             <span className="notif-card__by">
@@ -227,6 +243,32 @@ export default function NotificationsPage() {
         .notif-card__meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
         .notif-card__by, .notif-card__loc, .notif-card__time { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
         .notif-card__cta { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--primary); }
+        .notif-card__supervisor-note {
+          margin-top: 10px;
+          background: #f0fdf4;
+          border: 1px solid #86efac;
+          border-left: 3px solid #16a34a;
+          border-radius: 6px;
+          padding: 10px 12px;
+        }
+        .notif-card__supervisor-note-label {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #15803d;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 5px;
+        }
+        .notif-card__supervisor-note-text {
+          font-size: 13px;
+          color: #166534;
+          line-height: 1.55;
+          margin: 0;
+          white-space: pre-line;
+        }
         @media (max-width: 600px) {
           .notif-card { padding: 12px; gap: 10px; }
           .notif-card__icon { width: 38px; height: 38px; font-size: 16px; margin-left: 4px; }
